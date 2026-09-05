@@ -59,6 +59,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -68,6 +70,8 @@ import androidx.media3.common.Player
 import com.max.musicplayer.R
 import com.max.musicplayer.data.QueueEntry
 import com.max.musicplayer.data.Song
+import com.max.musicplayer.ui.blendWith
+import com.max.musicplayer.ui.rememberArtworkTint
 import com.max.musicplayer.ui.components.AlbumArt
 import com.max.musicplayer.ui.components.MarqueeText
 import com.max.musicplayer.ui.components.formatDuration
@@ -107,7 +111,25 @@ fun NowPlayingScreen(
     onOpenQueue: () -> Unit,
     onOpenEqualizer: () -> Unit,
     onContextItemClick: (QueueEntry) -> Unit,
+    /** Tenir el fondo con el color de la caratula (opcion de Personalizacion). */
+    tintFromArtwork: Boolean = false,
 ) {
+    // El tinte se calcula del color dominante de la tapa y se mezcla con el fondo del
+    // tema: sin mezclar, un color vivo dejaria el texto ilegible.
+    val tinte = rememberArtworkTint(song.id, tintFromArtwork)
+    val fondoTema = MaterialTheme.colorScheme.background
+    val pincel = if (tinte != null) {
+        Brush.verticalGradient(
+            listOf(
+                tinte.blendWith(fondoTema, 0.45f),
+                tinte.blendWith(fondoTema, 0.80f),
+                fondoTema,
+            ),
+        )
+    } else {
+        SolidColor(fondoTema)
+    }
+
     val tiraState = rememberLazyListState()
 
     // La tira se posiciona en lo que esta sonando, no arranca siempre del principio.
@@ -127,7 +149,7 @@ fun NowPlayingScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(pincel)
             .statusBarsPadding()
             .navigationBarsPadding(),
     ) {
@@ -326,7 +348,7 @@ fun NowPlayingScreen(
                 state = tiraState,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 12.dp, bottom = 24.dp),
+                    .padding(top = 12.dp, bottom = 72.dp),
                 contentPadding = PaddingValues(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
@@ -349,7 +371,7 @@ fun NowPlayingScreen(
                 }
             }
         } else {
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(72.dp))
         }
     }
 }

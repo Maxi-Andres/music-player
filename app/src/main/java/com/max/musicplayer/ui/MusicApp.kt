@@ -185,6 +185,7 @@ fun MusicApp(
                     onCycleRepeat = { vm.player.cycleRepeatMode() },
                     onOpenQueue = { navegar(Destino.Queue) },
                     onOpenEqualizer = { navegar(Destino.Equalizer) },
+                    tintFromArtwork = settingsVm.settings.value.tintFromArtwork,
                     onContextItemClick = { entrada ->
                         val indice = queue.entries.indexOfFirst { it.uid == entrada.uid }
                         if (indice >= 0) vm.player.playQueueIndex(indice)
@@ -214,6 +215,7 @@ fun MusicApp(
                 onBackgroundImage = settingsVm::setBackgroundImage,
                 onClearBackgroundImage = { settingsVm.clearBackgroundImage() },
                 onBackgroundDim = settingsVm::setBackgroundDim,
+                onTintFromArtwork = settingsVm::setTintFromArtwork,
                 onReset = { settingsVm.resetAll() },
             )
         }

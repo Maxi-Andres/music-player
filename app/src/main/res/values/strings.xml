@@ -83,6 +83,9 @@ Usá el menú ⋮ de una canción para agregarla acá; suena a continuación y d
     <string name="settings_pick_image">Elegir imagen de fondo</string>
     <string name="settings_remove_image">Quitar imagen</string>
     <string name="settings_dim">Oscurecer la imagen</string>
+    <string name="settings_now_playing">Pantalla de reproducción</string>
+    <string name="settings_tint_title">Teñir con la carátula</string>
+    <string name="settings_tint_body">El fondo toma el color dominante de la tapa del álbum</string>
     <string name="settings_reset">Restablecer todo</string>
     <string name="action_settings">Personalizar</string>
 </resources>

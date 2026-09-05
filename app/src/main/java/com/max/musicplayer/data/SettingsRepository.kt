@@ -3,6 +3,7 @@ package com.max.musicplayer.data
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.MutablePreferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
@@ -29,6 +30,7 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
             folderColor = prefs[CARPETAS] ?: AppSettings.DEFAULT_FOLDER,
             backgroundImageUri = prefs[IMAGEN],
             backgroundDim = prefs[OSCURECER] ?: AppSettings.DEFAULT_DIM,
+            tintFromArtwork = prefs[TINTE] ?: true,
         )
     }
 
@@ -48,6 +50,8 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
 
     suspend fun setBackgroundDim(value: Float) = edit { it[OSCURECER] = value }
 
+    suspend fun setTintFromArtwork(enabled: Boolean) = edit { it[TINTE] = enabled }
+
     suspend fun resetAll() = edit { it.clear() }
 
     private suspend fun edit(bloque: (MutablePreferences) -> Unit) {
@@ -62,5 +66,6 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
         val CARPETAS = intPreferencesKey("color_carpetas")
         val IMAGEN = stringPreferencesKey("imagen_fondo")
         val OSCURECER = floatPreferencesKey("oscurecer_fondo")
+        val TINTE = booleanPreferencesKey("tinte_caratula")
     }
 }

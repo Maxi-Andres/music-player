@@ -28,6 +28,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Slider
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -53,6 +54,7 @@ fun SettingsScreen(
     onBackgroundImage: (android.net.Uri) -> Unit,
     onClearBackgroundImage: () -> Unit,
     onBackgroundDim: (Float) -> Unit,
+    onTintFromArtwork: (Boolean) -> Unit,
     onReset: () -> Unit,
 ) {
     val elegirImagen = rememberLauncherForActivityResult(
@@ -128,6 +130,32 @@ fun SettingsScreen(
                 valueRange = 0f..0.9f,
                 onValueChange = onBackgroundDim,
                 modifier = Modifier.padding(horizontal = 16.dp),
+            )
+        }
+
+        Seccion(stringResource(R.string.settings_now_playing))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onTintFromArtwork(!settings.tintFromArtwork) }
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.settings_tint_title),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onBackground,
+                )
+                Text(
+                    text = stringResource(R.string.settings_tint_body),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Switch(
+                checked = settings.tintFromArtwork,
+                onCheckedChange = onTintFromArtwork,
             )
         }
 

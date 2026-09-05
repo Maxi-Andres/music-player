@@ -14,27 +14,37 @@ data class AppSettings(
     val backgroundImageUri: String? = null,
     /** Cuanto se oscurece la imagen para que el texto siga legible. */
     val backgroundDim: Float = DEFAULT_DIM,
+    /**
+     * Tenir la pantalla de reproduccion con el color dominante de la caratula,
+     * como hace la app de referencia.
+     */
+    val tintFromArtwork: Boolean = true,
 ) {
     val usesBackgroundImage: Boolean get() = !backgroundImageUri.isNullOrBlank()
 
     companion object {
-        const val DEFAULT_ACCENT = 0xFFFFB300.toInt()
+        const val DEFAULT_ACCENT = 0xFFF9E2AF.toInt() // yellow pastel
         const val DEFAULT_BACKGROUND = 0xFF0F1720.toInt()
-        const val DEFAULT_FOLDER = 0xFFFFB300.toInt()
+        const val DEFAULT_FOLDER = 0xFFF9E2AF.toInt()
         const val DEFAULT_DIM = 0.55f
 
-        /** Colores ofrecidos en la pantalla de personalizacion. */
+        /** Paleta pastel ofrecida en la pantalla de personalizacion. */
         val ACCENT_CHOICES = listOf(
-            0xFFFFB300.toInt(), // ambar (por defecto)
-            0xFFFF7043.toInt(), // naranja
-            0xFFEF5350.toInt(), // rojo
-            0xFFEC407A.toInt(), // rosa
-            0xFFAB47BC.toInt(), // violeta
-            0xFF5C6BC0.toInt(), // indigo
-            0xFF29B6F6.toInt(), // celeste
-            0xFF26A69A.toInt(), // verde agua
-            0xFF66BB6A.toInt(), // verde
-            0xFFBDBDBD.toInt(), // gris
+            0xFFFFFFFF.toInt(), // white
+            0xFFF5E0DC.toInt(), // rosewater
+            0xFFF2CDCD.toInt(), // flamingo
+            0xFFF5C2E7.toInt(), // pink
+            0xFFCBA6F7.toInt(), // mauve
+            0xFFF38BA8.toInt(), // red
+            0xFFEBA0AC.toInt(), // maroon
+            0xFFFAB387.toInt(), // peach
+            0xFFF9E2AF.toInt(), // yellow
+            0xFFA6E3A1.toInt(), // green
+            0xFF94E2D5.toInt(), // teal
+            0xFF89DCEB.toInt(), // sky
+            0xFF74C7EC.toInt(), // sapphire
+            0xFF89B4FA.toInt(), // blue
+            0xFFB4BEFE.toInt(), // lavender
         )
 
         val BACKGROUND_CHOICES = listOf(

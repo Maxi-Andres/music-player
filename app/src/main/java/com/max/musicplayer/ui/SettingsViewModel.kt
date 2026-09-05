@@ -44,5 +44,8 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch { repo.setBackgroundImage(uri.toString()) }
     }
 
+    fun setTintFromArtwork(enabled: Boolean) =
+        viewModelScope.launch { repo.setTintFromArtwork(enabled) }
+
     fun resetAll() = viewModelScope.launch { repo.resetAll() }
 }
