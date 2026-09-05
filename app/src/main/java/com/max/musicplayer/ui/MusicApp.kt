@@ -39,6 +39,7 @@ fun MusicApp(vm: MusicViewModel = viewModel()) {
     val query by vm.query.collectAsStateWithLifecycle()
     val songSort by vm.songSort.collectAsStateWithLifecycle()
     val folderSort by vm.folderSort.collectAsStateWithLifecycle()
+    val folderSongSort by vm.folderSongSort.collectAsStateWithLifecycle()
     val queue by vm.player.queue.collectAsStateWithLifecycle()
     val playback by vm.player.state.collectAsStateWithLifecycle()
 
@@ -91,12 +92,14 @@ fun MusicApp(vm: MusicViewModel = viewModel()) {
         )
 
         is Destino.Folder -> {
-            val delFolder = remember(allSongs, d.path, songSort) {
+            val delFolder = remember(allSongs, d.path, folderSongSort) {
                 vm.songsInFolder(allSongs, d.path)
             }
             FolderDetailScreen(
                 folderName = d.path.substringAfterLast('/'),
                 songs = delFolder,
+                sort = folderSongSort,
+                onSortChange = vm::setFolderSongSort,
                 onBack = { destino = Destino.Library },
                 onSongClick = { indice -> vm.play(delFolder, indice) },
                 onSongMenu = {},
@@ -108,7 +111,7 @@ fun MusicApp(vm: MusicViewModel = viewModel()) {
 
         is Destino.Directory -> {
             val subdirs = remember(allSongs, d.path) { vm.subdirectoriesOf(allSongs, d.path) }
-            val aqui = remember(allSongs, d.path, songSort) {
+            val aqui = remember(allSongs, d.path, folderSongSort) {
                 vm.songsDirectlyIn(allSongs, d.path)
             }
             DirectoryScreen(

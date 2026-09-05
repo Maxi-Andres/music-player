@@ -238,16 +238,20 @@ private fun SongsTab(
                 }
             }
 
-            AlphabetIndex(
-                letters = letras,
-                onLetterSelected = { letra ->
-                    val destino = MusicLibrary.firstIndexForLetter(etiquetas, letra)
-                    if (destino >= 0) scope.launch { listState.scrollToItem(destino) }
-                },
-                modifier = Modifier
-                    .align(Alignment.CenterEnd)
-                    .padding(vertical = 8.dp, horizontal = 2.dp),
-            )
+            // Solo con orden por titulo: con orden por fecha, saltar a una letra
+            // llevaria a una posicion arbitraria. La referencia tampoco la muestra aca.
+            if (songSort.isAlphabetical) {
+                AlphabetIndex(
+                    letters = letras,
+                    onLetterSelected = { letra ->
+                        val destino = MusicLibrary.firstIndexForLetter(etiquetas, letra)
+                        if (destino >= 0) scope.launch { listState.scrollToItem(destino) }
+                    },
+                    modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .padding(horizontal = 4.dp),
+                )
+            }
         }
     }
 }
@@ -302,17 +306,19 @@ private fun FoldersTab(
                 }
             }
 
-            AlphabetIndex(
-                letters = letras,
-                onLetterSelected = { letra ->
-                    val destino = MusicLibrary.firstIndexForLetter(etiquetas, letra)
-                    // +1 porque la fila "Directorios" ocupa la posicion 0.
-                    if (destino >= 0) scope.launch { listState.scrollToItem(destino + 1) }
-                },
-                modifier = Modifier
-                    .align(Alignment.CenterEnd)
-                    .padding(vertical = 8.dp, horizontal = 2.dp),
-            )
+            if (folderSort.isAlphabetical) {
+                AlphabetIndex(
+                    letters = letras,
+                    onLetterSelected = { letra ->
+                        val destino = MusicLibrary.firstIndexForLetter(etiquetas, letra)
+                        // +1 porque la fila "Directorios" ocupa la posicion 0.
+                        if (destino >= 0) scope.launch { listState.scrollToItem(destino + 1) }
+                    },
+                    modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .padding(horizontal = 4.dp),
+                )
+            }
         }
     }
 }
@@ -357,7 +363,7 @@ private fun SearchField(
 }
 
 @Composable
-private fun SongSortMenu(
+internal fun SongSortMenu(
     expanded: Boolean,
     current: SongSort,
     onDismiss: () -> Unit,

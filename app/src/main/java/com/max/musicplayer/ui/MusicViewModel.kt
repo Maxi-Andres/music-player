@@ -48,6 +48,14 @@ class MusicViewModel(app: Application) : AndroidViewModel(app) {
     private val _folderSort = MutableStateFlow(FolderSort.NAME_ASC)
     val folderSort: StateFlow<FolderSort> = _folderSort.asStateFlow()
 
+    /**
+     * Orden dentro de una carpeta. Va aparte del de la pestania Canciones y arranca
+     * alfabetico, igual que en docs/reference/03-detalle-carpeta.jpeg (la lista general
+     * viene por fecha, la de adentro de una carpeta por titulo).
+     */
+    private val _folderSongSort = MutableStateFlow(SongSort.TITLE_ASC)
+    val folderSongSort: StateFlow<SongSort> = _folderSongSort.asStateFlow()
+
     private val _query = MutableStateFlow("")
     val query: StateFlow<String> = _query.asStateFlow()
 
@@ -97,16 +105,21 @@ class MusicViewModel(app: Application) : AndroidViewModel(app) {
 
     fun setFolderSort(s: FolderSort) { _folderSort.value = s }
 
+    fun setFolderSongSort(s: SongSort) { _folderSongSort.value = s }
+
     // --- derivaciones puntuales, usadas desde las pantallas de detalle ---
 
     fun songsInFolder(songs: List<Song>, folderPath: String): List<Song> =
-        MusicLibrary.sortSongs(MusicLibrary.songsInFolder(songs, folderPath), _songSort.value)
+        MusicLibrary.sortSongs(
+            MusicLibrary.songsInFolder(songs, folderPath),
+            _folderSongSort.value,
+        )
 
     fun subdirectoriesOf(songs: List<Song>, path: String) =
         DirectoryTree.childrenOf(songs, path)
 
     fun songsDirectlyIn(songs: List<Song>, path: String): List<Song> =
-        MusicLibrary.sortSongs(DirectoryTree.songsDirectlyIn(songs, path), _songSort.value)
+        MusicLibrary.sortSongs(DirectoryTree.songsDirectlyIn(songs, path), _folderSongSort.value)
 
     fun songsUnder(songs: List<Song>, path: String): List<Song> =
         DirectoryTree.songsUnder(songs, path)

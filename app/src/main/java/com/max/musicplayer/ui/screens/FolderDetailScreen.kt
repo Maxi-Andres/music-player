@@ -20,7 +20,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,7 +34,9 @@ import androidx.compose.ui.unit.dp
 import com.max.musicplayer.R
 import com.max.musicplayer.data.MusicLibrary
 import com.max.musicplayer.data.Song
+import com.max.musicplayer.data.SongSort
 import com.max.musicplayer.ui.components.AlphabetIndex
+import com.max.musicplayer.ui.components.ListHeader
 import com.max.musicplayer.ui.components.PlayActionPills
 import com.max.musicplayer.ui.components.SongRow
 import com.max.musicplayer.ui.theme.FolderAmber
@@ -43,6 +48,8 @@ import kotlinx.coroutines.launch
 fun FolderDetailScreen(
     folderName: String,
     songs: List<Song>,
+    sort: SongSort,
+    onSortChange: (SongSort) -> Unit,
     onBack: () -> Unit,
     onSongClick: (Int) -> Unit,
     onSongMenu: (Song) -> Unit,
@@ -50,6 +57,7 @@ fun FolderDetailScreen(
     onPlay: () -> Unit,
     bottomBar: @Composable () -> Unit,
 ) {
+    var menuOrden by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     val letras = remember(songs) { MusicLibrary.alphabetIndex(songs.map { it.title }) }
@@ -98,16 +106,26 @@ fun FolderDetailScreen(
                     )
                 }
 
-                Text(
-                    text = pluralStringResource(
-                        R.plurals.song_count_title,
-                        songs.size,
-                        songs.size,
-                    ),
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                )
+                Box {
+                    ListHeader(
+                        title = pluralStringResource(
+                            R.plurals.song_count_title,
+                            songs.size,
+                            songs.size,
+                        ),
+                        onSortClick = { menuOrden = true },
+                        onSelectClick = {},
+                    )
+                    SongSortMenu(
+                        expanded = menuOrden,
+                        current = sort,
+                        onDismiss = { menuOrden = false },
+                        onSelect = {
+                            onSortChange(it)
+                            menuOrden = false
+                        },
+                    )
+                }
 
                 // Dentro de una carpeta los botones son blancos rellenos, como la referencia.
                 PlayActionPills(
@@ -129,16 +147,18 @@ fun FolderDetailScreen(
                 }
             }
 
-            AlphabetIndex(
-                letters = letras,
-                onLetterSelected = { letra ->
-                    val destino = MusicLibrary.firstIndexForLetter(etiquetas, letra)
-                    if (destino >= 0) scope.launch { listState.scrollToItem(destino) }
-                },
-                modifier = Modifier
-                    .align(Alignment.CenterEnd)
-                    .padding(vertical = 60.dp, horizontal = 2.dp),
-            )
+            if (sort.isAlphabetical) {
+                AlphabetIndex(
+                    letters = letras,
+                    onLetterSelected = { letra ->
+                        val destino = MusicLibrary.firstIndexForLetter(etiquetas, letra)
+                        if (destino >= 0) scope.launch { listState.scrollToItem(destino) }
+                    },
+                    modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .padding(horizontal = 4.dp),
+                )
+            }
         }
     }
 }
