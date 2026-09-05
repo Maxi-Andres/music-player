@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Reproductor</string>
+
+    <string name="tab_songs">Canciones</string>
+    <string name="tab_playlists">Listas</string>
+    <string name="tab_folders">Carpetas</string>
+    <string name="tab_albums">Álbumes</string>
+    <string name="tab_artists">Artistas</string>
+
+    <string name="action_shuffle">Aleatorio</string>
+    <string name="action_play">Reproducir</string>
+    <string name="action_search">Buscar</string>
+    <string name="action_sort">Ordenar</string>
+    <string name="action_select">Seleccionar</string>
+    <string name="action_back">Volver</string>
+    <string name="action_scroll_top">Ir arriba</string>
+
+    <string name="directories">Directorios</string>
+    <string name="unknown_artist">&lt;unknown&gt;</string>
+
+    <plurals name="song_count">
+        <item quantity="one">%d canción</item>
+        <item quantity="other">%d canciones</item>
+    </plurals>
+    <plurals name="folder_count">
+        <item quantity="one">%d Carpeta</item>
+        <item quantity="other">%d Carpetas</item>
+    </plurals>
+    <plurals name="song_count_title">
+        <item quantity="one">%d Canción</item>
+        <item quantity="other">%d Canciones</item>
+    </plurals>
+
+    <string name="scanning">(Escaneando.)</string>
+
+    <string name="permission_title">Necesitamos ver tu música</string>
+    <string name="permission_body">Para mostrar tus carpetas y canciones, la app necesita permiso para leer los archivos de audio del teléfono. No se sube nada a internet.</string>
+    <string name="permission_grant">Dar permiso</string>
+    <string name="permission_settings">Abrir ajustes</string>
+    <string name="permission_denied_body">El permiso está denegado. Podés habilitarlo desde los ajustes del sistema.</string>
+
+    <string name="empty_library">No se encontró música en el teléfono</string>
+    <string name="empty_search">Sin resultados</string>
+
+    <string name="cd_album_art">Carátula</string>
+    <string name="cd_previous">Anterior</string>
+    <string name="cd_next">Siguiente</string>
+    <string name="cd_play">Reproducir</string>
+    <string name="cd_pause">Pausar</string>
+    <string name="cd_favorite">Favorito</string>
+    <string name="cd_repeat">Repetir</string>
+    <string name="cd_queue">Cola</string>
+    <string name="cd_rewind_10">Atrasar 10 segundos</string>
+    <string name="cd_forward_10">Adelantar 10 segundos</string>
+</resources>
