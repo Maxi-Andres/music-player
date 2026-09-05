@@ -1,6 +1,5 @@
 package com.max.musicplayer.data
 
-import java.text.Collator
 import java.util.Locale
 
 /**
@@ -13,14 +12,17 @@ import java.util.Locale
 object MusicLibrary {
 
     /**
-     * Comparador sensible al idioma: hace que "Ángeles" caiga junto a "Angeles" y no
-     * al final de la lista, que es lo que pasa comparando por codigo de caracter.
+     * Clave de ordenamiento: mismo texto sin acentos y en minusculas.
+     *
+     * A proposito NO se usa java.text.Collator: con strength PRIMARY trata el espacio
+     * como ignorable, y entonces "ambiente" quedaria antes que "a romper". La app de
+     * referencia (ver docs/reference/02-tab-carpetas.jpeg) ordena "a romper" primero,
+     * o sea que el espacio pesa y va antes que las letras. Comparar la clave como String
+     * comun da exactamente ese orden, y ademas es mas rapido y predecible.
      */
-    private val collator: Collator = Collator.getInstance(Locale("es")).apply {
-        strength = Collator.PRIMARY // ignora mayusculas y acentos al comparar
-    }
+    internal fun sortKey(text: String): String = stripAccents(text).lowercase(Locale.ROOT)
 
-    private val byName = Comparator<String> { a, b -> collator.compare(a, b) }
+    private val byName = Comparator<String> { a, b -> sortKey(a).compareTo(sortKey(b)) }
 
     /**
      * Agrupa las canciones por la carpeta que las contiene.
@@ -47,7 +49,8 @@ object MusicLibrary {
         SongSort.TITLE_ASC -> songs.sortedWith(compareBy(byName) { it.title })
         SongSort.TITLE_DESC -> songs.sortedWith(compareBy(byName) { it.title }).reversed()
         SongSort.ARTIST_ASC -> songs.sortedWith(
-            compareBy(byName) { it.displayArtist } then compareBy(byName) { it.title },
+            compareBy<Song, String>(byName) { it.displayArtist }
+                .then(compareBy<Song, String>(byName) { it.title }),
         )
         SongSort.DATE_ADDED_DESC -> songs.sortedByDescending { it.dateModifiedSeconds }
         SongSort.DATE_ADDED_ASC -> songs.sortedBy { it.dateModifiedSeconds }
@@ -97,7 +100,7 @@ object MusicLibrary {
                 a == b -> 0
                 a == "#" -> 1 // el "#" siempre al final
                 b == "#" -> -1
-                else -> collator.compare(a, b)
+                else -> a.compareTo(b)
             }
         }
 
@@ -114,7 +117,11 @@ object MusicLibrary {
     private fun normalize(text: String): String =
         stripAccents(text).lowercase(Locale.ROOT)
 
+    /**
+     * Saca los acentos descomponiendo el texto (NFD) y tirando las marcas diacriticas.
+     * Se filtra por categoria Unicode en vez de por regex para no depender de escapes.
+     */
     private fun stripAccents(text: String): String =
         java.text.Normalizer.normalize(text, java.text.Normalizer.Form.NFD)
-            .replace(Regex("\p{InCombiningDiacriticalMarks}+"), "")
+            .filter { Character.getType(it) != Character.NON_SPACING_MARK.toInt() }
 }

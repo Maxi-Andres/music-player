@@ -35,6 +35,32 @@ class MusicLibraryTest {
     }
 
     @Test
+    fun `el orden de carpetas reproduce el de la app de referencia`() {
+        // Orden exacto de docs/reference/02-tab-carpetas.jpeg: el espacio y el guion
+        // pesan y van antes que las letras, por eso "a romper" va primera.
+        val nombres = listOf(
+            "andres calamaro", "acdc", "animacion------", "a romper-------",
+            "ani------------", "aerosmith", "alphaville", "ambiente-------",
+            "arctic monkeys",
+        )
+        val carpetas = nombres.map { MusicFolder(path = "/m/$it", name = it, songCount = 1) }
+
+        val ordenadas = MusicLibrary.sortFolders(carpetas, FolderSort.NAME_ASC).map { it.name }
+
+        assertThat(ordenadas).containsExactly(
+            "a romper-------",
+            "acdc",
+            "aerosmith",
+            "alphaville",
+            "ambiente-------",
+            "andres calamaro",
+            "ani------------",
+            "animacion------",
+            "arctic monkeys",
+        ).inOrder()
+    }
+
+    @Test
     fun `la carpeta guarda la ruta completa, no solo el nombre`() {
         val acdc = MusicLibrary.groupIntoFolders(biblioteca).first { it.name == "acdc" }
 
