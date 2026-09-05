@@ -1,5 +1,13 @@
 package com.max.musicplayer.ui.screens
 
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -24,8 +32,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -35,7 +41,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -156,6 +161,7 @@ fun LibraryScreen(
                 LibraryTab.FOLDERS -> FoldersTab(
                     folders = folders,
                     folderSort = folderSort,
+                    showDirectories = query.isBlank(),
                     onFolderSortChange = onFolderSortChange,
                     onFolderClick = onFolderClick,
                     onDirectoriesClick = onDirectoriesClick,
@@ -260,6 +266,7 @@ private fun SongsTab(
 private fun FoldersTab(
     folders: List<com.max.musicplayer.data.MusicFolder>,
     folderSort: FolderSort,
+    showDirectories: Boolean,
     onFolderSortChange: (FolderSort) -> Unit,
     onFolderClick: (String) -> Unit,
     onDirectoriesClick: () -> Unit,
@@ -295,7 +302,11 @@ private fun FoldersTab(
 
         Box(modifier = Modifier.weight(1f)) {
             LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
-                item { DirectoriesRow(onClick = onDirectoriesClick) }
+                // Mientras se busca no se muestra: no es un resultado y descuadra
+                // el conteo del encabezado.
+                if (showDirectories) {
+                    item { DirectoriesRow(onClick = onDirectoriesClick) }
+                }
                 items(folders, key = { it.path }) { carpeta ->
                     FolderRow(
                         name = carpeta.name,
@@ -311,8 +322,9 @@ private fun FoldersTab(
                     letters = letras,
                     onLetterSelected = { letra ->
                         val destino = MusicLibrary.firstIndexForLetter(etiquetas, letra)
-                        // +1 porque la fila "Directorios" ocupa la posicion 0.
-                        if (destino >= 0) scope.launch { listState.scrollToItem(destino + 1) }
+                        // La fila "Directorios" ocupa la posicion 0 cuando esta visible.
+                        val offset = if (showDirectories) 1 else 0
+                        if (destino >= 0) scope.launch { listState.scrollToItem(destino + offset) }
                     },
                     modifier = Modifier
                         .align(Alignment.CenterEnd)
@@ -330,7 +342,13 @@ private fun EmptyMessage(text: String) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * Campo de busqueda.
+ *
+ * Se usa [BasicTextField] y no el TextField de Material porque ese ultimo impone
+ * 56dp de alto minimo y el texto quedaba cortado en la barra de acciones.
+ * Ademas pide el foco al aparecer, para que el teclado se abra solo.
+ */
 @Composable
 private fun SearchField(
     query: String,
@@ -338,28 +356,50 @@ private fun SearchField(
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    TextField(
-        value = query,
-        onValueChange = onQueryChange,
-        modifier = modifier,
-        singleLine = true,
-        placeholder = { Text(stringResource(R.string.action_search), color = TextSecondary) },
-        trailingIcon = {
-            IconButton(onClick = onClose) {
-                Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onBackground,
-                )
-            }
-        },
-        colors = TextFieldDefaults.colors(
-            focusedContainerColor = Color.Transparent,
-            unfocusedContainerColor = Color.Transparent,
-            focusedIndicatorColor = Color.Transparent,
-            unfocusedIndicatorColor = Color.Transparent,
-        ),
-    )
+    val focusRequester = remember { FocusRequester() }
+    val keyboard = LocalSoftwareKeyboardController.current
+
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+        keyboard?.show()
+    }
+
+    Row(
+        modifier = modifier.padding(start = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        BasicTextField(
+            value = query,
+            onValueChange = onQueryChange,
+            modifier = Modifier
+                .weight(1f)
+                .focusRequester(focusRequester),
+            singleLine = true,
+            textStyle = MaterialTheme.typography.bodyLarge.copy(
+                color = MaterialTheme.colorScheme.onBackground,
+            ),
+            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            keyboardActions = KeyboardActions(onSearch = { keyboard?.hide() }),
+            decorationBox = { inner ->
+                if (query.isEmpty()) {
+                    Text(
+                        text = stringResource(R.string.action_search),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = TextSecondary,
+                    )
+                }
+                inner()
+            },
+        )
+        IconButton(onClick = onClose) {
+            Icon(
+                imageVector = Icons.Default.Close,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onBackground,
+            )
+        }
+    }
 }
 
 @Composable
