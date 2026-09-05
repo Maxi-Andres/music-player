@@ -1,5 +1,12 @@
 package com.max.musicplayer.ui.screens
 
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.offset
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -10,6 +17,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -35,11 +43,11 @@ import androidx.compose.material.icons.filled.Replay10
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -51,6 +59,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -67,7 +76,12 @@ import com.max.musicplayer.ui.theme.TextSecondary
 
 private const val SEEK_STEP_MS = 10_000L
 
+/** Linea fina, como en la app de referencia. */
+private val TRACK_HEIGHT = 3.dp
+
 /** Pantalla de reproduccion. Ver docs/reference/04-now-playing.jpeg. */
+// El slider con thumb propio todavia es API experimental de Material 3.
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NowPlayingScreen(
     song: Song,
@@ -204,9 +218,11 @@ fun NowPlayingScreen(
         }
 
         Row(
+            // Casi sin margen lateral: la barra tiene que llegar hasta los botones de
+            // -10/+10. Cuanto mas larga, mas fino es el control al arrastrar.
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+                .padding(horizontal = 2.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = { onSeekBy(-SEEK_STEP_MS) }) {
@@ -216,43 +232,21 @@ fun NowPlayingScreen(
                     tint = MaterialTheme.colorScheme.onBackground,
                 )
             }
-            // El tiempo va dentro de la barra, como en la referencia. La pastilla no
-            // tiene gestos propios, asi que el arrastre del slider sigue funcionando
-            // aunque el dedo caiga encima.
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(horizontal = 8.dp),
-                contentAlignment = Alignment.CenterStart,
-            ) {
-                Slider(
-                    value = posicionMostrada.toFloat().coerceIn(0f, duracion.toFloat()),
-                    valueRange = 0f..duracion.toFloat(),
-                    onValueChange = {
-                        arrastrando = true
-                        posicionArrastre = it
-                    },
-                    onValueChangeFinished = {
-                        onSeek(posicionArrastre.toLong())
-                        arrastrando = false
-                    },
-                    colors = SliderDefaults.colors(
-                        thumbColor = Amber,
-                        activeTrackColor = Amber,
-                        inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant,
-                    ),
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                Text(
-                    text = "${formatDuration(posicionMostrada)} / ${formatDuration(durationMs)}",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(50))
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                        .padding(horizontal = 10.dp, vertical = 3.dp),
-                )
-            }
+
+            SeekBar(
+                positionMs = posicionMostrada,
+                durationMs = durationMs,
+                onScrub = {
+                    arrastrando = true
+                    posicionArrastre = it.toFloat()
+                },
+                onScrubEnd = {
+                    onSeek(posicionArrastre.toLong())
+                    arrastrando = false
+                },
+                modifier = Modifier.weight(1f),
+            )
+
             IconButton(onClick = { onSeekBy(SEEK_STEP_MS) }) {
                 Icon(
                     imageVector = Icons.Default.Forward10,
@@ -358,6 +352,93 @@ fun NowPlayingScreen(
             }
         } else {
             Spacer(modifier = Modifier.height(24.dp))
+        }
+    }
+}
+
+/**
+ * Barra de progreso con la pastilla del tiempo como cursor.
+ *
+ * Es propia y no un [androidx.compose.material3.Slider] porque este reserva a los
+ * costados el ancho del thumb: con una pastilla tan ancha la linea quedaba mucho mas
+ * corta que el espacio disponible y no llegaba a los botones de -10/+10. Aca la linea
+ * ocupa todo el ancho y la pastilla se posiciona sola, lo que ademas da un control mas
+ * fino al arrastrar.
+ */
+@Composable
+private fun SeekBar(
+    positionMs: Long,
+    durationMs: Long,
+    onScrub: (Long) -> Unit,
+    onScrubEnd: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val duracion = durationMs.coerceAtLeast(1L)
+    var anchoPx by remember { mutableIntStateOf(0) }
+    var anchoPastillaPx by remember { mutableIntStateOf(0) }
+
+    fun posicionEn(x: Float): Long {
+        if (anchoPx <= 0) return 0L
+        return ((x / anchoPx).coerceIn(0f, 1f) * duracion).toLong()
+    }
+
+    val fraccion = (positionMs.toFloat() / duracion).coerceIn(0f, 1f)
+
+    Box(
+        modifier = modifier
+            .height(26.dp)
+            .onSizeChanged { anchoPx = it.width }
+            .pointerInput(duracion) {
+                detectTapGestures { offset ->
+                    onScrub(posicionEn(offset.x))
+                    onScrubEnd()
+                }
+            }
+            .pointerInput(duracion) {
+                detectHorizontalDragGestures(
+                    onDragStart = { offset -> onScrub(posicionEn(offset.x)) },
+                    onDragEnd = { onScrubEnd() },
+                    onDragCancel = { onScrubEnd() },
+                    onHorizontalDrag = { cambio, _ ->
+                        cambio.consume()
+                        onScrub(posicionEn(cambio.position.x))
+                    },
+                )
+            },
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(TRACK_HEIGHT)
+                .clip(CircleShape)
+                .background(Color.White.copy(alpha = 0.3f)),
+        )
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(fraccion)
+                .height(TRACK_HEIGHT)
+                .clip(CircleShape)
+                .background(Color.White),
+        )
+
+        // La pastilla se corre con el progreso, sin salirse por los bordes.
+        val recorrido = (anchoPx - anchoPastillaPx).coerceAtLeast(0)
+        Box(
+            modifier = Modifier
+                .offset { IntOffset((fraccion * recorrido).toInt(), 0) }
+                .onSizeChanged { anchoPastillaPx = it.width }
+                .clip(RoundedCornerShape(50))
+                .background(Color.White)
+                .padding(horizontal = 8.dp, vertical = 1.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = "${formatDuration(positionMs)} / ${formatDuration(durationMs)}",
+                style = MaterialTheme.typography.labelMedium,
+                color = Color(0xFF101010),
+                maxLines = 1,
+            )
         }
     }
 }

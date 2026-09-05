@@ -85,6 +85,12 @@ class PlayerConnection(
     private val listener = object : Player.Listener {
         override fun onEvents(player: Player, events: Player.Events) {
             syncFromPlayer(player)
+            // Si se cerro desde la notificacion, el player se queda sin items. Hay que
+            // vaciar tambien nuestro modelo, si no el mini reproductor sigue en pantalla
+            // mostrando una cancion que ya no existe.
+            if (player.mediaItemCount == 0 && _queue.value.entries.isNotEmpty()) {
+                _queue.value = PlayQueue()
+            }
         }
 
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {

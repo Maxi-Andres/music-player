@@ -147,16 +147,16 @@ fun LibraryScreen(
         bottomBar = bottomBar,
     ) { padding ->
         Column(modifier = Modifier.padding(padding)) {
-            // Lo unico fijo arriba son las pestanias: el encabezado y los botones
-            // viven dentro de la lista y se van al scrollear, para que entren mas filas.
-            if (buscando) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp)
-                        .padding(horizontal = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
+            // Fila propia para la lupa, arriba de las pestanias: puesta al lado de
+            // ellas les robaba ancho y quedaban corridas a la izquierda.
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .padding(horizontal = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (buscando) {
                     SearchField(
                         query = query,
                         onQueryChange = onQueryChange,
@@ -166,39 +166,8 @@ fun LibraryScreen(
                         },
                         modifier = Modifier.weight(1f),
                     )
-                }
-            } else {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    TabRow(
-                        selectedTabIndex = pagerState.currentPage,
-                        containerColor = MaterialTheme.colorScheme.background,
-                        contentColor = MaterialTheme.colorScheme.onBackground,
-                        modifier = Modifier.weight(1f),
-                    ) {
-                        TABS.forEachIndexed { indice, tab ->
-                            val seleccionada = indice == pagerState.currentPage
-                            Tab(
-                                selected = seleccionada,
-                                onClick = { onTabSelected(tab) },
-                                text = {
-                                    Text(
-                                        text = stringResource(tabLabel(tab)),
-                                        fontSize = TAB_TEXT_SIZE,
-                                        fontWeight = if (seleccionada) {
-                                            FontWeight.Bold
-                                        } else {
-                                            FontWeight.Normal
-                                        },
-                                        color = if (seleccionada) {
-                                            MaterialTheme.colorScheme.onBackground
-                                        } else {
-                                            TextSecondary
-                                        },
-                                    )
-                                },
-                            )
-                        }
-                    }
+                } else {
+                    Spacer(modifier = Modifier.weight(1f))
                     IconButton(onClick = { buscando = true }) {
                         Icon(
                             imageVector = Icons.Default.Search,
@@ -206,6 +175,38 @@ fun LibraryScreen(
                             tint = MaterialTheme.colorScheme.onBackground,
                         )
                     }
+                }
+            }
+
+            // Las pestanias quedan fijas y a todo el ancho; el encabezado y los
+            // botones viven dentro de la lista y se van al scrollear.
+            TabRow(
+                selectedTabIndex = pagerState.currentPage,
+                containerColor = MaterialTheme.colorScheme.background,
+                contentColor = MaterialTheme.colorScheme.onBackground,
+            ) {
+                TABS.forEachIndexed { indice, tab ->
+                    val seleccionada = indice == pagerState.currentPage
+                    Tab(
+                        selected = seleccionada,
+                        onClick = { onTabSelected(tab) },
+                        text = {
+                            Text(
+                                text = stringResource(tabLabel(tab)),
+                                fontSize = TAB_TEXT_SIZE,
+                                fontWeight = if (seleccionada) {
+                                    FontWeight.Bold
+                                } else {
+                                    FontWeight.Normal
+                                },
+                                color = if (seleccionada) {
+                                    MaterialTheme.colorScheme.onBackground
+                                } else {
+                                    TextSecondary
+                                },
+                            )
+                        },
+                    )
                 }
             }
 

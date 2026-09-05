@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
+import androidx.media3.common.Player
 import androidx.media3.common.util.Util
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.CacheBitmapLoader
@@ -36,18 +37,37 @@ class PlaybackService : MediaSessionService() {
     private var mediaSession: MediaSession? = null
 
     /**
-     * Boton de cerrar de la notificacion y la pantalla de bloqueo.
-     * Media3 no lo pone solo: hay que declararlo como comando propio de la sesion.
+     * Botones propios de la notificacion y la pantalla de bloqueo: repetir y cerrar.
+     * Media3 no los pone solo, hay que declararlos como comandos de la sesion.
+     *
+     * El orden importa: el panel del sistema ubica el primer boton propio a la
+     * izquierda de los controles y el segundo a la derecha. Por eso repetir va
+     * primero y la X queda del lado derecho, como se pidio.
      */
+    private fun botonRepetir(repeatMode: Int): CommandButton {
+        val icono = when (repeatMode) {
+            Player.REPEAT_MODE_ONE -> CommandButton.ICON_REPEAT_ONE
+            Player.REPEAT_MODE_ALL -> CommandButton.ICON_REPEAT_ALL
+            else -> CommandButton.ICON_REPEAT_OFF
+        }
+        return CommandButton.Builder(icono)
+            .setDisplayName(getString(R.string.cd_repeat))
+            .setSessionCommand(SessionCommand(ACTION_REPEAT, Bundle.EMPTY))
+            .setSlots(CommandButton.SLOT_OVERFLOW)
+            .build()
+    }
+
     private val botonCerrar: CommandButton by lazy {
         CommandButton.Builder()
             .setDisplayName(getString(R.string.cd_close))
             .setIconResId(R.drawable.ic_close)
             .setSessionCommand(SessionCommand(ACTION_CLOSE, Bundle.EMPTY))
-            // Sin ranura explicita los botones propios caen al overflow y no se ven.
             .setSlots(CommandButton.SLOT_OVERFLOW)
             .build()
     }
+
+    private fun preferencias(repeatMode: Int) =
+        ImmutableList.of(botonRepetir(repeatMode), botonCerrar)
 
     override fun onCreate() {
         super.onCreate()
@@ -69,12 +89,19 @@ class PlaybackService : MediaSessionService() {
             .build()
             .apply { setAudioSessionId(audioSessionId) }
 
+        // Al cambiar el modo de repeticion hay que refrescar el icono del boton.
+        player.addListener(object : Player.Listener {
+            override fun onRepeatModeChanged(repeatMode: Int) {
+                mediaSession?.setMediaButtonPreferences(preferencias(repeatMode))
+            }
+        })
+
         mediaSession = MediaSession.Builder(this, player)
             .setSessionActivity(openAppIntent())
             .setBitmapLoader(CacheBitmapLoader(AudioArtworkBitmapLoader(this)))
             // La UI lo lee desde los extras de la sesion para armar el ecualizador.
             .setExtras(Bundle().apply { putInt(KEY_AUDIO_SESSION_ID, audioSessionId) })
-            .setMediaButtonPreferences(ImmutableList.of(botonCerrar))
+            .setMediaButtonPreferences(preferencias(player.repeatMode))
             .setCallback(Callback())
             .build()
     }
@@ -88,11 +115,12 @@ class PlaybackService : MediaSessionService() {
             val comandos = MediaSession.ConnectionResult.DEFAULT_SESSION_COMMANDS
                 .buildUpon()
                 .add(SessionCommand(ACTION_CLOSE, Bundle.EMPTY))
+                .add(SessionCommand(ACTION_REPEAT, Bundle.EMPTY))
                 .build()
 
             return MediaSession.ConnectionResult.AcceptedResultBuilder(session)
                 .setAvailableSessionCommands(comandos)
-                .setMediaButtonPreferences(ImmutableList.of(botonCerrar))
+                .setMediaButtonPreferences(preferencias(session.player.repeatMode))
                 .build()
         }
 
@@ -102,15 +130,26 @@ class PlaybackService : MediaSessionService() {
             customCommand: SessionCommand,
             args: Bundle,
         ): ListenableFuture<SessionResult> {
-            if (customCommand.customAction != ACTION_CLOSE) {
-                return Futures.immediateFuture(
+            when (customCommand.customAction) {
+                ACTION_CLOSE -> {
+                    // Cerrar = frenar y sacar la notificacion, no solo pausar.
+                    session.player.stop()
+                    session.player.clearMediaItems()
+                    stopSelf()
+                }
+
+                ACTION_REPEAT -> {
+                    session.player.repeatMode = when (session.player.repeatMode) {
+                        Player.REPEAT_MODE_OFF -> Player.REPEAT_MODE_ALL
+                        Player.REPEAT_MODE_ALL -> Player.REPEAT_MODE_ONE
+                        else -> Player.REPEAT_MODE_OFF
+                    }
+                }
+
+                else -> return Futures.immediateFuture(
                     SessionResult(SessionResult.RESULT_ERROR_NOT_SUPPORTED),
                 )
             }
-            // Cerrar = frenar y sacar la notificacion, no solo pausar.
-            session.player.stop()
-            session.player.clearMediaItems()
-            stopSelf()
             return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
         }
     }
@@ -128,6 +167,7 @@ class PlaybackService : MediaSessionService() {
     companion object {
         const val KEY_AUDIO_SESSION_ID = "audio_session_id"
         private const val ACTION_CLOSE = "com.max.musicplayer.CLOSE"
+        private const val ACTION_REPEAT = "com.max.musicplayer.REPEAT"
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? =

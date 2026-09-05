@@ -8,11 +8,9 @@ que se pueda ver la cola o las canciones de la carpeta?
 
 La función de Spotify que buscas se llama Sesión remota (o Sesión grupal), la cual está integrada dentro de la herramienta Spotify Jam. se puede implementar algo asi?? pero que una persona sola tenga la app mia, asi no hace falta descargarla, o si no bueno que tenga que estar descargado en los celus de todos los que quieran unirse
 
-La X para cerrar tiene que estar a la derecha y cuando la tocas la barra que te muestra que camcion estas escuchando no tiene que estar mas en la app, hasta que claro se toque alguna cancion
+en las notificaciones esta la opcion para repetir, me parace mejor la opcion para random?
 
-esta bien que colapse, pero ahora moviste lo de canciones y carpetas como a la izqueirda por que pusiste el icono de busqueda a la derecha de estas dos, no queda bien ahi, posicionalo como estaba antes
-
-el tiempo de la barra se tiene que mover con la barra, osea pasa a ser la barra eso es lo que moves y lo que se tiene que ir moviendo conforme avanza la cancion
+se podrian mejorar los icons, por ejempl oel de aldelantar 10segs es una pija el de la otra app esta mejor
 
 ------------------------------------------------------------done:
 
@@ -35,3 +33,11 @@ creo que el pop up que te sale en notificaciones cuando estas escuchando algo y 
 lo que si le falta la X a ambas
 
 y quiero el tiempo adentro de la barra 
+
+La X para cerrar tiene que estar a la derecha y cuando la tocas la barra que te muestra que camcion estas escuchando no tiene que estar mas en la app, hasta que claro se toque alguna cancion
+
+esta bien que colapse, pero ahora moviste lo de canciones y carpetas como a la izqueirda por que pusiste el icono de busqueda a la derecha de estas dos, no queda bien ahi, posicionalo como estaba antes
+
+el tiempo de la barra se tiene que mover con la barra, osea pasa a ser la barra eso es lo que moves y lo que se tiene que ir moviendo conforme avanza la cancion
+
+que la barra que te pone la musica sea mas grande, es como re chica, que llegue mas cerca a los 10 de los costados, de esta manera tambien va a dar un control mas fino de cuanto estas adelantando, y tambien que sea mas finita la barra en si y que la pill tenga menos padding
