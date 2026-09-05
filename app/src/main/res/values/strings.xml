@@ -51,6 +51,7 @@
     <string name="cd_favorite">Favorito</string>
     <string name="cd_repeat">Repetir</string>
     <string name="cd_queue">Cola</string>
+    <string name="cd_close">Cerrar</string>
     <string name="cd_rewind_10">Atrasar 10 segundos</string>
     <string name="cd_forward_10">Adelantar 10 segundos</string>
 

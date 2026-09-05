@@ -48,6 +48,7 @@ import com.max.musicplayer.data.SongSort
 import com.max.musicplayer.ui.components.AlphabetIndex
 import com.max.musicplayer.ui.components.ListHeader
 import com.max.musicplayer.ui.components.PlayActionPills
+import com.max.musicplayer.ui.components.ScrollToTopButton
 import com.max.musicplayer.ui.components.SongRow
 import com.max.musicplayer.ui.theme.Amber
 import com.max.musicplayer.ui.theme.FolderAmber
@@ -239,24 +240,5 @@ private fun CollapsedBar(
                 overflow = TextOverflow.Ellipsis,
             )
         }
-    }
-}
-
-@Composable
-private fun ScrollToTopButton(onClick: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .size(52.dp)
-            .clip(CircleShape)
-            .background(Color.White)
-            .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(
-            imageVector = Icons.Default.KeyboardDoubleArrowUp,
-            contentDescription = stringResource(R.string.action_scroll_top),
-            tint = Amber,
-            modifier = Modifier.size(28.dp),
-        )
     }
 }

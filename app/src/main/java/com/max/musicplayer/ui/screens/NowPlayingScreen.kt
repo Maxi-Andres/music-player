@@ -216,31 +216,43 @@ fun NowPlayingScreen(
                     tint = MaterialTheme.colorScheme.onBackground,
                 )
             }
-            Text(
-                text = "${formatDuration(posicionMostrada)} / ${formatDuration(durationMs)}",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onBackground,
-            )
-            Slider(
-                value = posicionMostrada.toFloat().coerceIn(0f, duracion.toFloat()),
-                valueRange = 0f..duracion.toFloat(),
-                onValueChange = {
-                    arrastrando = true
-                    posicionArrastre = it
-                },
-                onValueChangeFinished = {
-                    onSeek(posicionArrastre.toLong())
-                    arrastrando = false
-                },
-                colors = SliderDefaults.colors(
-                    thumbColor = Amber,
-                    activeTrackColor = Amber,
-                    inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant,
-                ),
+            // El tiempo va dentro de la barra, como en la referencia. La pastilla no
+            // tiene gestos propios, asi que el arrastre del slider sigue funcionando
+            // aunque el dedo caiga encima.
+            Box(
                 modifier = Modifier
                     .weight(1f)
                     .padding(horizontal = 8.dp),
-            )
+                contentAlignment = Alignment.CenterStart,
+            ) {
+                Slider(
+                    value = posicionMostrada.toFloat().coerceIn(0f, duracion.toFloat()),
+                    valueRange = 0f..duracion.toFloat(),
+                    onValueChange = {
+                        arrastrando = true
+                        posicionArrastre = it
+                    },
+                    onValueChangeFinished = {
+                        onSeek(posicionArrastre.toLong())
+                        arrastrando = false
+                    },
+                    colors = SliderDefaults.colors(
+                        thumbColor = Amber,
+                        activeTrackColor = Amber,
+                        inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant,
+                    ),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Text(
+                    text = "${formatDuration(posicionMostrada)} / ${formatDuration(durationMs)}",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(50))
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .padding(horizontal = 10.dp, vertical = 3.dp),
+                )
+            }
             IconButton(onClick = { onSeekBy(SEEK_STEP_MS) }) {
                 Icon(
                     imageVector = Icons.Default.Forward10,

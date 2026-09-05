@@ -1,12 +1,20 @@
-Que se pueda personalizar, tipo poner un fondo especifico, o los colores de las carpetas, o directamente un color en el fondo, cosas asi
+Que se pueda personalizar, tipo poner un fondo especifico, o los colores de las carpetas, o directamente un color en el fondo, el color de acento, cosas asi, que al lado de buscar haya un engranaje y que te lleve a la pestaña de personalizacion
 
-poner tipo release? asi entro a github y lo descargo de ahi y a la mierda
+poner tipo release? asi entro a github y lo descargo de ahi y a la mierda para que sea mas facil tipo descargarlo en otro celu o lo que sea
 
 que se puedan borrar canciones, tipo viste los audios de whatsap poronga
 
 que se pueda ver la cola o las canciones de la carpeta?
 
-done:
+La función de Spotify que buscas se llama Sesión remota (o Sesión grupal), la cual está integrada dentro de la herramienta Spotify Jam. se puede implementar algo asi?? pero que una persona sola tenga la app mia, asi no hace falta descargarla, o si no bueno que tenga que estar descargado en los celus de todos los que quieran unirse
+
+La X para cerrar tiene que estar a la derecha y cuando la tocas la barra que te muestra que camcion estas escuchando no tiene que estar mas en la app, hasta que claro se toque alguna cancion
+
+esta bien que colapse, pero ahora moviste lo de canciones y carpetas como a la izqueirda por que pusiste el icono de busqueda a la derecha de estas dos, no queda bien ahi, posicionalo como estaba antes
+
+el tiempo de la barra se tiene que mover con la barra, osea pasa a ser la barra eso es lo que moves y lo que se tiene que ir moviendo conforme avanza la cancion
+
+------------------------------------------------------------done:
 
 en canciones tambien tiene que estar el buscador por letra
 
@@ -22,3 +30,8 @@ canciones con caracteres raros (no las letras normales) al final de todo no arri
 arreglar la pantalla de reproduccion de las canciones por que no esta muy estetica, la imagen tiene que bajar mas, la lista de canciones un poco mas arriba, todo el panel de control un poco mas separado de la imagen
 
 mover los 3 puntos a la izqueirda de las canciones para que no joda con la barra de letras
+
+creo que el pop up que te sale en notificaciones cuando estas escuchando algo y en la pantalla de bloqueo estan medios bugueados en el sentido de que aveces sale uno, aveces el otro, igual me parece por que lo vi rapido
+lo que si le falta la X a ambas
+
+y quiero el tiempo adentro de la barra 

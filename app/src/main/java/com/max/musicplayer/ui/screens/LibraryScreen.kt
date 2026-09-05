@@ -29,6 +29,7 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -46,6 +47,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.max.musicplayer.R
 import com.max.musicplayer.data.FolderSort
 import com.max.musicplayer.data.MusicFolder
@@ -58,12 +60,16 @@ import com.max.musicplayer.ui.components.DirectoriesRow
 import com.max.musicplayer.ui.components.FolderRow
 import com.max.musicplayer.ui.components.ListHeader
 import com.max.musicplayer.ui.components.PlayActionPills
+import com.max.musicplayer.ui.components.ScrollToTopButton
 import com.max.musicplayer.ui.components.SongRow
 import com.max.musicplayer.ui.theme.TextSecondary
 import kotlinx.coroutines.launch
 
 /** Ancho que hay que reservar a la derecha para la barra de indice superpuesta. */
 private val INDEX_BAR_SPACE = 30.dp
+
+/** Un par de puntos mas grande que el titulo por defecto de una pestania. */
+private val TAB_TEXT_SIZE = 18.sp
 
 /** Solo las pestanias que estan implementadas; no se muestran tabs sin contenido. */
 private val TABS = listOf(LibraryTab.SONGS, LibraryTab.FOLDERS)
@@ -141,16 +147,16 @@ fun LibraryScreen(
         bottomBar = bottomBar,
     ) { padding ->
         Column(modifier = Modifier.padding(padding)) {
-            // Barra de acciones propia en vez de TopAppBar: la de Material mide 64dp
-            // y aca no hay titulo que poner, era todo espacio vacio.
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp)
-                    .padding(horizontal = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                if (buscando) {
+            // Lo unico fijo arriba son las pestanias: el encabezado y los botones
+            // viven dentro de la lista y se van al scrollear, para que entren mas filas.
+            if (buscando) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp)
+                        .padding(horizontal = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
                     SearchField(
                         query = query,
                         onQueryChange = onQueryChange,
@@ -160,8 +166,39 @@ fun LibraryScreen(
                         },
                         modifier = Modifier.weight(1f),
                     )
-                } else {
-                    Spacer(modifier = Modifier.weight(1f))
+                }
+            } else {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    TabRow(
+                        selectedTabIndex = pagerState.currentPage,
+                        containerColor = MaterialTheme.colorScheme.background,
+                        contentColor = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        TABS.forEachIndexed { indice, tab ->
+                            val seleccionada = indice == pagerState.currentPage
+                            Tab(
+                                selected = seleccionada,
+                                onClick = { onTabSelected(tab) },
+                                text = {
+                                    Text(
+                                        text = stringResource(tabLabel(tab)),
+                                        fontSize = TAB_TEXT_SIZE,
+                                        fontWeight = if (seleccionada) {
+                                            FontWeight.Bold
+                                        } else {
+                                            FontWeight.Normal
+                                        },
+                                        color = if (seleccionada) {
+                                            MaterialTheme.colorScheme.onBackground
+                                        } else {
+                                            TextSecondary
+                                        },
+                                    )
+                                },
+                            )
+                        }
+                    }
                     IconButton(onClick = { buscando = true }) {
                         Icon(
                             imageVector = Icons.Default.Search,
@@ -169,35 +206,6 @@ fun LibraryScreen(
                             tint = MaterialTheme.colorScheme.onBackground,
                         )
                     }
-                }
-            }
-
-            TabRow(
-                selectedTabIndex = pagerState.currentPage,
-                containerColor = MaterialTheme.colorScheme.background,
-                contentColor = MaterialTheme.colorScheme.onBackground,
-            ) {
-                TABS.forEachIndexed { indice, tab ->
-                    val seleccionada = indice == pagerState.currentPage
-                    Tab(
-                        selected = seleccionada,
-                        onClick = { onTabSelected(tab) },
-                        text = {
-                            Text(
-                                text = stringResource(tabLabel(tab)),
-                                fontWeight = if (seleccionada) {
-                                    FontWeight.Bold
-                                } else {
-                                    FontWeight.Normal
-                                },
-                                color = if (seleccionada) {
-                                    MaterialTheme.colorScheme.onBackground
-                                } else {
-                                    TextSecondary
-                                },
-                            )
-                        },
-                    )
                 }
             }
 
@@ -263,62 +271,74 @@ private fun SongsTab(
         val letra = letraPendiente ?: return@LaunchedEffect
         val destino = MusicLibrary.firstIndexForLetter(etiquetas, letra)
         if (destino >= 0) {
-            listState.scrollToItem(destino)
+            listState.scrollToItem(destino + 1) // +1 por la cabecera
             letraPendiente = null
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        Box {
-            ListHeader(
-                title = pluralStringResource(R.plurals.song_count_title, totalSongs, totalSongs),
-                subtitle = if (isScanning) stringResource(R.string.scanning) else null,
-                onSortClick = { menuOrden = true },
-                onSelectClick = {},
-            )
-            SongSortMenu(
-                expanded = menuOrden,
-                current = songSort,
-                onDismiss = { menuOrden = false },
-                onSelect = {
-                    onSongSortChange(it)
-                    menuOrden = false
-                },
-            )
-        }
+    val colapsado by remember { derivedStateOf { listState.firstVisibleItemIndex > 0 } }
 
-        PlayActionPills(onShuffleClick = onShuffleAll, onPlayClick = onPlayAll)
-
-        // El indice A-Z se superpone solo a la lista, para no tapar los botones de arriba.
-        Box(modifier = Modifier.weight(1f)) {
-            if (songs.isEmpty() && !isScanning) {
-                EmptyMessage(stringResource(R.string.empty_library))
-            } else {
-                LazyColumn(
-                    state = listState,
-                    // Deja libre el ancho de la barra de letras, que va superpuesta:
-                    // si no, tapa la fecha de cada cancion.
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(end = INDEX_BAR_SPACE),
-                ) {
-                    items(songs.size, key = { songs[it].id }) { indice ->
-                        val song = songs[indice]
-                        SongRow(
-                            song = song,
-                            onClick = { onSongClick(indice) },
-                            onMenuClick = { onSongMenu(song) },
+    Box(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            state = listState,
+            // Deja libre el ancho de la barra de letras, que va superpuesta:
+            // si no, tapa la fecha de cada cancion.
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(end = INDEX_BAR_SPACE),
+        ) {
+            // La cabecera es el item 0: se va al scrollear y quedan mas canciones.
+            item(key = "header") {
+                Column {
+                    Box {
+                        ListHeader(
+                            title = pluralStringResource(
+                                R.plurals.song_count_title,
+                                totalSongs,
+                                totalSongs,
+                            ),
+                            subtitle = if (isScanning) stringResource(R.string.scanning) else null,
+                            onSortClick = { menuOrden = true },
+                            onSelectClick = {},
+                        )
+                        SongSortMenu(
+                            expanded = menuOrden,
+                            current = songSort,
+                            onDismiss = { menuOrden = false },
+                            onSelect = {
+                                onSongSortChange(it)
+                                menuOrden = false
+                            },
                         )
                     }
+                    PlayActionPills(onShuffleClick = onShuffleAll, onPlayClick = onPlayAll)
                 }
             }
 
+            if (songs.isEmpty() && !isScanning) {
+                item { EmptyMessage(stringResource(R.string.empty_library)) }
+            } else {
+                items(songs.size, key = { songs[it].id }) { indice ->
+                    val song = songs[indice]
+                    SongRow(
+                        song = song,
+                        onClick = { onSongClick(indice) },
+                        onMenuClick = { onSongMenu(song) },
+                    )
+                }
+            }
+        }
+
+        // Aparecen recien con la cabecera colapsada: arriba de todo taparian los
+        // botones Aleatorio/Reproducir, y ademas ahi ya estas en la primera letra.
+        if (colapsado) {
             AlphabetIndex(
                 letters = letras,
                 onLetterSelected = { letra ->
                     if (songSort.isAlphabetical) {
                         val destino = MusicLibrary.firstIndexForLetter(etiquetas, letra)
-                        if (destino >= 0) scope.launch { listState.scrollToItem(destino) }
+                        // +1 por la cabecera, que ocupa la posicion 0.
+                        if (destino >= 0) scope.launch { listState.scrollToItem(destino + 1) }
                     } else {
                         // Con orden por fecha la letra no ubica nada, asi que se pasa
                         // a orden alfabetico y recien ahi se salta.
@@ -329,6 +349,13 @@ private fun SongsTab(
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
                     .padding(horizontal = 4.dp),
+            )
+
+            ScrollToTopButton(
+                onClick = { scope.launch { listState.animateScrollToItem(0) } },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 16.dp),
             )
         }
     }
@@ -352,65 +379,76 @@ private fun FoldersTab(
 
     // Mismo criterio que en Canciones: si el orden no es alfabetico, se reordena y el
     // salto queda pendiente hasta que la lista nueva este lista.
+    // Cuantos items hay antes de la primera carpeta: la cabecera y, si esta visible,
+    // la fila "Directorios".
+    val desplazamientoLista = 1 + if (showDirectories) 1 else 0
+
     var letraPendiente by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(etiquetas, letraPendiente) {
         val letra = letraPendiente ?: return@LaunchedEffect
         val destino = MusicLibrary.firstIndexForLetter(etiquetas, letra)
         if (destino >= 0) {
-            listState.scrollToItem(destino + if (showDirectories) 1 else 0)
+            listState.scrollToItem(destino + desplazamientoLista)
             letraPendiente = null
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        Box {
-            ListHeader(
-                title = pluralStringResource(R.plurals.folder_count, folders.size, folders.size),
-                onSortClick = { menuOrden = true },
-                onSelectClick = {},
-            )
-            FolderSortMenu(
-                expanded = menuOrden,
-                current = folderSort,
-                onDismiss = { menuOrden = false },
-                onSelect = {
-                    onFolderSortChange(it)
-                    menuOrden = false
-                },
-            )
-        }
+    val colapsado by remember { derivedStateOf { listState.firstVisibleItemIndex > 0 } }
 
-        Box(modifier = Modifier.weight(1f)) {
-            LazyColumn(
-                state = listState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(end = INDEX_BAR_SPACE),
-            ) {
-                // Mientras se busca no se muestra: no es un resultado y descuadra
-                // el conteo del encabezado.
-                if (showDirectories) {
-                    item { DirectoriesRow(onClick = onDirectoriesClick) }
-                }
-                items(folders, key = { it.path }) { carpeta ->
-                    FolderRow(
-                        name = carpeta.name,
-                        songCount = carpeta.songCount,
-                        onClick = { onFolderClick(carpeta.path) },
-                        onMenuClick = {},
+    Box(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            state = listState,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(end = INDEX_BAR_SPACE),
+        ) {
+            item(key = "header") {
+                Box {
+                    ListHeader(
+                        title = pluralStringResource(
+                            R.plurals.folder_count,
+                            folders.size,
+                            folders.size,
+                        ),
+                        onSortClick = { menuOrden = true },
+                        onSelectClick = {},
+                    )
+                    FolderSortMenu(
+                        expanded = menuOrden,
+                        current = folderSort,
+                        onDismiss = { menuOrden = false },
+                        onSelect = {
+                            onFolderSortChange(it)
+                            menuOrden = false
+                        },
                     )
                 }
             }
 
+            // Mientras se busca no se muestra: no es un resultado y descuadra
+            // el conteo del encabezado.
+            if (showDirectories) {
+                item(key = "directorios") { DirectoriesRow(onClick = onDirectoriesClick) }
+            }
+
+            items(folders, key = { it.path }) { carpeta ->
+                FolderRow(
+                    name = carpeta.name,
+                    songCount = carpeta.songCount,
+                    onClick = { onFolderClick(carpeta.path) },
+                    onMenuClick = {},
+                )
+            }
+        }
+
+        if (colapsado) {
             AlphabetIndex(
                 letters = letras,
                 onLetterSelected = { letra ->
                     if (folderSort.isAlphabetical) {
                         val destino = MusicLibrary.firstIndexForLetter(etiquetas, letra)
-                        // La fila "Directorios" ocupa la posicion 0 cuando esta visible.
-                        val corrimiento = if (showDirectories) 1 else 0
                         if (destino >= 0) {
-                            scope.launch { listState.scrollToItem(destino + corrimiento) }
+                            scope.launch { listState.scrollToItem(destino + desplazamientoLista) }
                         }
                     } else {
                         onFolderSortChange(FolderSort.NAME_ASC)
@@ -421,13 +459,26 @@ private fun FoldersTab(
                     .align(Alignment.CenterEnd)
                     .padding(horizontal = 4.dp),
             )
+
+            ScrollToTopButton(
+                onClick = { scope.launch { listState.animateScrollToItem(0) } },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 16.dp),
+            )
         }
     }
 }
 
 @Composable
 private fun EmptyMessage(text: String) {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+    // Alto fijo: dentro de un item de LazyColumn, fillMaxSize da altura cero.
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(200.dp),
+        contentAlignment = Alignment.Center,
+    ) {
         Text(text = text, color = TextSecondary)
     }
 }

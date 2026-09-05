@@ -8,9 +8,16 @@ import androidx.media3.common.C
 import androidx.media3.common.util.Util
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.CacheBitmapLoader
+import androidx.media3.session.CommandButton
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
+import androidx.media3.session.SessionCommand
+import androidx.media3.session.SessionResult
+import com.google.common.collect.ImmutableList
+import com.google.common.util.concurrent.Futures
+import com.google.common.util.concurrent.ListenableFuture
 import com.max.musicplayer.MainActivity
+import com.max.musicplayer.R
 
 /**
  * Servicio de reproduccion.
@@ -27,6 +34,20 @@ import com.max.musicplayer.MainActivity
 class PlaybackService : MediaSessionService() {
 
     private var mediaSession: MediaSession? = null
+
+    /**
+     * Boton de cerrar de la notificacion y la pantalla de bloqueo.
+     * Media3 no lo pone solo: hay que declararlo como comando propio de la sesion.
+     */
+    private val botonCerrar: CommandButton by lazy {
+        CommandButton.Builder()
+            .setDisplayName(getString(R.string.cd_close))
+            .setIconResId(R.drawable.ic_close)
+            .setSessionCommand(SessionCommand(ACTION_CLOSE, Bundle.EMPTY))
+            // Sin ranura explicita los botones propios caen al overflow y no se ven.
+            .setSlots(CommandButton.SLOT_OVERFLOW)
+            .build()
+    }
 
     override fun onCreate() {
         super.onCreate()
@@ -53,7 +74,45 @@ class PlaybackService : MediaSessionService() {
             .setBitmapLoader(CacheBitmapLoader(AudioArtworkBitmapLoader(this)))
             // La UI lo lee desde los extras de la sesion para armar el ecualizador.
             .setExtras(Bundle().apply { putInt(KEY_AUDIO_SESSION_ID, audioSessionId) })
+            .setMediaButtonPreferences(ImmutableList.of(botonCerrar))
+            .setCallback(Callback())
             .build()
+    }
+
+    private inner class Callback : MediaSession.Callback {
+
+        override fun onConnect(
+            session: MediaSession,
+            controller: MediaSession.ControllerInfo,
+        ): MediaSession.ConnectionResult {
+            val comandos = MediaSession.ConnectionResult.DEFAULT_SESSION_COMMANDS
+                .buildUpon()
+                .add(SessionCommand(ACTION_CLOSE, Bundle.EMPTY))
+                .build()
+
+            return MediaSession.ConnectionResult.AcceptedResultBuilder(session)
+                .setAvailableSessionCommands(comandos)
+                .setMediaButtonPreferences(ImmutableList.of(botonCerrar))
+                .build()
+        }
+
+        override fun onCustomCommand(
+            session: MediaSession,
+            controller: MediaSession.ControllerInfo,
+            customCommand: SessionCommand,
+            args: Bundle,
+        ): ListenableFuture<SessionResult> {
+            if (customCommand.customAction != ACTION_CLOSE) {
+                return Futures.immediateFuture(
+                    SessionResult(SessionResult.RESULT_ERROR_NOT_SUPPORTED),
+                )
+            }
+            // Cerrar = frenar y sacar la notificacion, no solo pausar.
+            session.player.stop()
+            session.player.clearMediaItems()
+            stopSelf()
+            return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
+        }
     }
 
     /** Tocar la notificacion abre la app en vez de arrancar una Activity nueva. */
@@ -68,6 +127,7 @@ class PlaybackService : MediaSessionService() {
 
     companion object {
         const val KEY_AUDIO_SESSION_ID = "audio_session_id"
+        private const val ACTION_CLOSE = "com.max.musicplayer.CLOSE"
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? =
