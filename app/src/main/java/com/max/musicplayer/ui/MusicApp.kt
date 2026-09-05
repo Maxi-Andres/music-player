@@ -1,13 +1,13 @@
 package com.max.musicplayer.ui
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.max.musicplayer.data.DirectoryTree
@@ -29,6 +29,11 @@ fun MusicApp(vm: MusicViewModel = viewModel()) {
     LaunchedEffect(Unit) { vm.start() }
 
     var destino by remember { mutableStateOf<Destino>(Destino.Library) }
+
+    // Viven aca y no dentro de LibraryScreen: esta funcion no se recompone al navegar,
+    // asi que al volver de una carpeta las listas siguen donde estaban.
+    val songsListState = rememberLazyListState()
+    val foldersListState = rememberLazyListState()
 
     val allSongs by vm.allSongs.collectAsStateWithLifecycle()
     val visibleSongs by vm.visibleSongs.collectAsStateWithLifecycle()
@@ -78,6 +83,8 @@ fun MusicApp(vm: MusicViewModel = viewModel()) {
             query = query,
             songSort = songSort,
             folderSort = folderSort,
+            songsListState = songsListState,
+            foldersListState = foldersListState,
             onTabSelected = vm::selectTab,
             onQueryChange = vm::setQuery,
             onSongSortChange = vm::setSongSort,

@@ -1,30 +1,26 @@
 package com.max.musicplayer.ui.screens
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -41,12 +37,18 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.max.musicplayer.R
 import com.max.musicplayer.data.FolderSort
+import com.max.musicplayer.data.MusicFolder
 import com.max.musicplayer.data.MusicLibrary
 import com.max.musicplayer.data.Song
 import com.max.musicplayer.data.SongSort
@@ -71,17 +73,25 @@ private fun tabLabel(tab: LibraryTab) = when (tab) {
     LibraryTab.ARTISTS -> R.string.tab_artists
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * Pantalla principal, con las pestanias Canciones y Carpetas deslizables.
+ *
+ * Los [LazyListState] llegan desde afuera a proposito: si se crearan aca, al entrar a
+ * una carpeta y volver la pantalla se recompone de cero y la lista arrancaria arriba
+ * de todo, perdiendo la posicion donde estabas.
+ */
 @Composable
 fun LibraryScreen(
     songs: List<Song>,
-    folders: List<com.max.musicplayer.data.MusicFolder>,
+    folders: List<MusicFolder>,
     totalSongs: Int,
     isScanning: Boolean,
     selectedTab: LibraryTab,
     query: String,
     songSort: SongSort,
     folderSort: FolderSort,
+    songsListState: LazyListState,
+    foldersListState: LazyListState,
     onTabSelected: (LibraryTab) -> Unit,
     onQueryChange: (String) -> Unit,
     onSongSortChange: (SongSort) -> Unit,
@@ -95,6 +105,33 @@ fun LibraryScreen(
     bottomBar: @Composable () -> Unit,
 ) {
     var buscando by remember { mutableStateOf(false) }
+
+    val pagerState = rememberPagerState(
+        initialPage = TABS.indexOf(selectedTab).coerceAtLeast(0),
+    ) { TABS.size }
+
+    // Deslizar cambia la pestania...
+    LaunchedEffect(pagerState.currentPage) {
+        onTabSelected(TABS[pagerState.currentPage])
+    }
+    // ...y tocar la pestania desliza.
+    LaunchedEffect(selectedTab) {
+        val destino = TABS.indexOf(selectedTab)
+        if (destino >= 0 && destino != pagerState.currentPage) {
+            pagerState.animateScrollToPage(destino)
+        }
+    }
+
+    // Al cambiar la busqueda hay que volver arriba: si no, quedas parado en el medio
+    // de los resultados nuevos y parece que hubiera contenido cortado hacia arriba.
+    var busquedaPrevia by remember { mutableStateOf(query) }
+    LaunchedEffect(query) {
+        if (query != busquedaPrevia) {
+            busquedaPrevia = query
+            songsListState.scrollToItem(0)
+            foldersListState.scrollToItem(0)
+        }
+    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -133,19 +170,23 @@ fun LibraryScreen(
             }
 
             TabRow(
-                selectedTabIndex = TABS.indexOf(selectedTab).coerceAtLeast(0),
+                selectedTabIndex = pagerState.currentPage,
                 containerColor = MaterialTheme.colorScheme.background,
                 contentColor = MaterialTheme.colorScheme.onBackground,
             ) {
-                TABS.forEach { tab ->
-                    val seleccionada = tab == selectedTab
+                TABS.forEachIndexed { indice, tab ->
+                    val seleccionada = indice == pagerState.currentPage
                     Tab(
                         selected = seleccionada,
                         onClick = { onTabSelected(tab) },
                         text = {
                             Text(
                                 text = stringResource(tabLabel(tab)),
-                                fontWeight = if (seleccionada) FontWeight.Bold else FontWeight.Normal,
+                                fontWeight = if (seleccionada) {
+                                    FontWeight.Bold
+                                } else {
+                                    FontWeight.Normal
+                                },
                                 color = if (seleccionada) {
                                     MaterialTheme.colorScheme.onBackground
                                 } else {
@@ -157,27 +198,36 @@ fun LibraryScreen(
                 }
             }
 
-            when (selectedTab) {
-                LibraryTab.FOLDERS -> FoldersTab(
-                    folders = folders,
-                    folderSort = folderSort,
-                    showDirectories = query.isBlank(),
-                    onFolderSortChange = onFolderSortChange,
-                    onFolderClick = onFolderClick,
-                    onDirectoriesClick = onDirectoriesClick,
-                )
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.weight(1f),
+                // Mantiene viva la pestania vecina para que su scroll no se reinicie.
+                beyondViewportPageCount = 1,
+            ) { pagina ->
+                when (TABS[pagina]) {
+                    LibraryTab.FOLDERS -> FoldersTab(
+                        folders = folders,
+                        folderSort = folderSort,
+                        showDirectories = query.isBlank(),
+                        listState = foldersListState,
+                        onFolderSortChange = onFolderSortChange,
+                        onFolderClick = onFolderClick,
+                        onDirectoriesClick = onDirectoriesClick,
+                    )
 
-                else -> SongsTab(
-                    songs = songs,
-                    totalSongs = totalSongs,
-                    isScanning = isScanning,
-                    songSort = songSort,
-                    onSongSortChange = onSongSortChange,
-                    onSongClick = onSongClick,
-                    onSongMenu = onSongMenu,
-                    onShuffleAll = onShuffleAll,
-                    onPlayAll = onPlayAll,
-                )
+                    else -> SongsTab(
+                        songs = songs,
+                        totalSongs = totalSongs,
+                        isScanning = isScanning,
+                        songSort = songSort,
+                        listState = songsListState,
+                        onSongSortChange = onSongSortChange,
+                        onSongClick = onSongClick,
+                        onSongMenu = onSongMenu,
+                        onShuffleAll = onShuffleAll,
+                        onPlayAll = onPlayAll,
+                    )
+                }
             }
         }
     }
@@ -189,6 +239,7 @@ private fun SongsTab(
     totalSongs: Int,
     isScanning: Boolean,
     songSort: SongSort,
+    listState: LazyListState,
     onSongSortChange: (SongSort) -> Unit,
     onSongClick: (Int) -> Unit,
     onSongMenu: (Song) -> Unit,
@@ -196,7 +247,6 @@ private fun SongsTab(
     onPlayAll: () -> Unit,
 ) {
     var menuOrden by remember { mutableStateOf(false) }
-    val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
 
     val letras = remember(songs) { MusicLibrary.alphabetIndex(songs.map { it.title }) }
@@ -205,11 +255,7 @@ private fun SongsTab(
     Column(modifier = Modifier.fillMaxSize()) {
         Box {
             ListHeader(
-                title = pluralStringResource(
-                    R.plurals.song_count_title,
-                    totalSongs,
-                    totalSongs,
-                ),
+                title = pluralStringResource(R.plurals.song_count_title, totalSongs, totalSongs),
                 subtitle = if (isScanning) stringResource(R.string.scanning) else null,
                 onSortClick = { menuOrden = true },
                 onSelectClick = {},
@@ -264,15 +310,15 @@ private fun SongsTab(
 
 @Composable
 private fun FoldersTab(
-    folders: List<com.max.musicplayer.data.MusicFolder>,
+    folders: List<MusicFolder>,
     folderSort: FolderSort,
     showDirectories: Boolean,
+    listState: LazyListState,
     onFolderSortChange: (FolderSort) -> Unit,
     onFolderClick: (String) -> Unit,
     onDirectoriesClick: () -> Unit,
 ) {
     var menuOrden by remember { mutableStateOf(false) }
-    val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
 
     val letras = remember(folders) { MusicLibrary.alphabetIndex(folders.map { it.name }) }
@@ -281,11 +327,7 @@ private fun FoldersTab(
     Column(modifier = Modifier.fillMaxSize()) {
         Box {
             ListHeader(
-                title = pluralStringResource(
-                    R.plurals.folder_count,
-                    folders.size,
-                    folders.size,
-                ),
+                title = pluralStringResource(R.plurals.folder_count, folders.size, folders.size),
                 onSortClick = { menuOrden = true },
                 onSelectClick = {},
             )
@@ -323,8 +365,10 @@ private fun FoldersTab(
                     onLetterSelected = { letra ->
                         val destino = MusicLibrary.firstIndexForLetter(etiquetas, letra)
                         // La fila "Directorios" ocupa la posicion 0 cuando esta visible.
-                        val offset = if (showDirectories) 1 else 0
-                        if (destino >= 0) scope.launch { listState.scrollToItem(destino + offset) }
+                        val corrimiento = if (showDirectories) 1 else 0
+                        if (destino >= 0) {
+                            scope.launch { listState.scrollToItem(destino + corrimiento) }
+                        }
                     },
                     modifier = Modifier
                         .align(Alignment.CenterEnd)
