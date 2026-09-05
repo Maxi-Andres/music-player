@@ -2,6 +2,7 @@ package com.max.musicplayer.playback
 
 import android.content.ComponentName
 import android.content.Context
+import android.os.Bundle
 import androidx.core.net.toUri
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
@@ -32,7 +33,7 @@ data class PlaybackUiState(
     val audioSessionId: Int = 0,
 )
 
-fun Song.toMediaItem(uid: Long): MediaItem = MediaItem.Builder()
+fun Song.toMediaItem(uid: Long, ephemeral: Boolean = false): MediaItem = MediaItem.Builder()
     // El uid va en el mediaId para poder reencontrar la entrada exacta en la cola
     // aunque la misma cancion este encolada mas de una vez.
     .setMediaId("$uid|$id")
@@ -45,9 +46,51 @@ fun Song.toMediaItem(uid: Long): MediaItem = MediaItem.Builder()
             // Apunta al archivo de audio: AudioArtworkBitmapLoader le saca la tapa
             // embebida. La caratula por album mostraba la de otra cancion.
             .setArtworkUri(contentUri.toUri())
+            // Los datos completos viajan con el item para poder rearmar la cola tal
+            // cual si la app se cierra y se vuelve a abrir con la musica sonando.
+            .setExtras(
+                Bundle().apply {
+                    putLong(EXTRA_SONG_ID, id)
+                    putLong(EXTRA_ALBUM_ID, albumId)
+                    putLong(EXTRA_DURATION, durationMs)
+                    putLong(EXTRA_DATE, dateModifiedSeconds)
+                    putString(EXTRA_TITLE, title)
+                    putString(EXTRA_ARTIST, artist)
+                    putString(EXTRA_ALBUM, album)
+                    putString(EXTRA_PATH, filePath)
+                    putBoolean(EXTRA_EPHEMERAL, ephemeral)
+                },
+            )
             .build(),
     )
     .build()
+
+/** Rehace la entrada de cola a partir de un item del reproductor. */
+fun MediaItem.toQueueEntry(): QueueEntry? {
+    val extras = mediaMetadata.extras ?: return null
+    val uid = mediaId.substringBefore('|').toLongOrNull() ?: return null
+    val song = Song(
+        id = extras.getLong(EXTRA_SONG_ID),
+        title = extras.getString(EXTRA_TITLE).orEmpty(),
+        artist = extras.getString(EXTRA_ARTIST).orEmpty(),
+        album = extras.getString(EXTRA_ALBUM).orEmpty(),
+        albumId = extras.getLong(EXTRA_ALBUM_ID),
+        durationMs = extras.getLong(EXTRA_DURATION),
+        filePath = extras.getString(EXTRA_PATH).orEmpty(),
+        dateModifiedSeconds = extras.getLong(EXTRA_DATE),
+    )
+    return QueueEntry(uid, song, extras.getBoolean(EXTRA_EPHEMERAL))
+}
+
+private const val EXTRA_SONG_ID = "song_id"
+private const val EXTRA_ALBUM_ID = "album_id"
+private const val EXTRA_DURATION = "duration"
+private const val EXTRA_DATE = "date"
+private const val EXTRA_TITLE = "title"
+private const val EXTRA_ARTIST = "artist"
+private const val EXTRA_ALBUM = "album"
+private const val EXTRA_PATH = "path"
+private const val EXTRA_EPHEMERAL = "ephemeral"
 
 /**
  * Puente entre la UI y [PlaybackService].
@@ -111,6 +154,7 @@ class PlayerConnection(
                     addListener(listener)
                     syncFromPlayer(this)
                 }
+                restaurarColaDesdeElReproductor()
                 _state.value = _state.value.copy(
                     isConnected = true,
                     audioSessionId = controller?.sessionExtras
@@ -122,6 +166,25 @@ class PlayerConnection(
             },
             MoreExecutors.directExecutor(),
         )
+    }
+
+    /**
+     * Rearma la cola con lo que ya tiene el reproductor.
+     *
+     * Hace falta al volver a abrir la app mientras suena algo: el servicio sigue vivo,
+     * pero el modelo de la UI arranca vacio y sin esto no se mostraba el mini
+     * reproductor, como si no hubiera nada sonando.
+     */
+    private fun restaurarColaDesdeElReproductor() {
+        val c = controller ?: return
+        if (c.mediaItemCount == 0) return
+
+        val entradas = (0 until c.mediaItemCount).mapNotNull { c.getMediaItemAt(it).toQueueEntry() }
+        if (entradas.size != c.mediaItemCount) return
+
+        // Los uid nuevos tienen que seguir despues de los que ya existen.
+        nextUid = (entradas.maxOfOrNull { it.uid } ?: -1L) + 1
+        _queue.value = PlayQueue(entradas, c.currentMediaItemIndex)
     }
 
     fun release() {
@@ -188,7 +251,7 @@ class PlayerConnection(
 
         val nueva = PlayQueue(orden, indice)
         _queue.value = nueva
-        c.setMediaItems(nueva.entries.map { it.song.toMediaItem(it.uid) }, indice, 0L)
+        c.setMediaItems(nueva.entries.map { it.song.toMediaItem(it.uid, it.ephemeral) }, indice, 0L)
         c.prepare()
         c.play()
     }
@@ -246,10 +309,10 @@ class PlayerConnection(
         val despues = nueva.entries.drop(destino + 1)
 
         if (antes.isNotEmpty()) {
-            c.addMediaItems(0, antes.map { it.song.toMediaItem(it.uid) })
+            c.addMediaItems(0, antes.map { it.song.toMediaItem(it.uid, it.ephemeral) })
         }
         if (despues.isNotEmpty()) {
-            c.addMediaItems(despues.map { it.song.toMediaItem(it.uid) })
+            c.addMediaItems(despues.map { it.song.toMediaItem(it.uid, it.ephemeral) })
         }
     }
 
@@ -269,7 +332,7 @@ class PlayerConnection(
 
         val entrada = despues.entries[posicion]
         _queue.value = despues
-        c.addMediaItem(posicion, entrada.song.toMediaItem(entrada.uid))
+        c.addMediaItem(posicion, entrada.song.toMediaItem(entrada.uid, entrada.ephemeral))
         if (!c.isPlaying && c.mediaItemCount == 1) {
             c.prepare()
             c.play()

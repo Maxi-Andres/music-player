@@ -1,8 +1,8 @@
 poner tipo release? asi entro a github y lo descargo de ahi y a la mierda para que sea mas facil tipo descargarlo en otro celu o lo que sea
 
-que se puedan borrar canciones, tipo viste los audios de whatsap poronga
+que se puedan borrar canciones, asi podes borrar viste los audios de whatsap poronga
 
-que se pueda ver la cola o las canciones de la carpeta?
+que se pueda ver la cola o las canciones de la carpeta? en la lista de canciones me refiero por que si se pueden ver
 
 La función de Spotify que buscas se llama Sesión remota (o Sesión grupal), la cual está integrada dentro de la herramienta Spotify Jam. se puede implementar algo asi?? pero que una persona sola tenga la app mia, asi no hace falta descargarla, o si no bueno que tenga que estar descargado en los celus de todos los que quieran unirse
 
@@ -12,7 +12,6 @@ los 3 puntos al lado de las carpetas no hacen nada y el boton al lado del que es
 
 se podrian mejorar los icons, por ejempl oel de aldelantar 10segs es una pija el de la otra app esta mejor
 
-ponerle un icono piola
 
 ------------------------------------------------------------done:
 
@@ -66,3 +65,7 @@ export const ACCENT_COLORS: { name: AccentColor; hex: string }[] = [
   { name: 'blue', hex: '#89b4fa' },
   { name: 'lavender', hex: '#b4befe' },
 ]
+
+ponerle un icono piola
+
+
