@@ -213,7 +213,6 @@ fun MusicApp(
                 onBackgroundColor = settingsVm::setBackgroundColor,
                 onFolderColor = settingsVm::setFolderColor,
                 onBackgroundImage = settingsVm::setBackgroundImage,
-                onClearBackgroundImage = { settingsVm.clearBackgroundImage() },
                 onBackgroundDim = settingsVm::setBackgroundDim,
                 onTintFromArtwork = settingsVm::setTintFromArtwork,
                 onReset = { settingsVm.resetAll() },

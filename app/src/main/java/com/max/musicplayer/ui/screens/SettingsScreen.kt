@@ -21,7 +21,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -39,6 +41,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.max.musicplayer.R
 import com.max.musicplayer.data.AppSettings
+import kotlin.math.roundToInt
 
 /**
  * Personalizacion de la apariencia: color de acento, fondo (color o imagen) y color
@@ -52,7 +55,6 @@ fun SettingsScreen(
     onBackgroundColor: (Int) -> Unit,
     onFolderColor: (Int) -> Unit,
     onBackgroundImage: (android.net.Uri) -> Unit,
-    onClearBackgroundImage: () -> Unit,
     onBackgroundDim: (Float) -> Unit,
     onTintFromArtwork: (Boolean) -> Unit,
     onReset: () -> Unit,
@@ -104,33 +106,31 @@ fun SettingsScreen(
             onSelect = onBackgroundColor,
         )
 
-        Row(
+        // Un solo boton: para quitar la imagen alcanza con tocar un color, que ya la
+        // descarta. Con dos botones el texto se partia en dos renglones.
+        Button(
+            onClick = { elegirImagen.launch(arrayOf("image/*")) },
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Button(onClick = { elegirImagen.launch(arrayOf("image/*")) }) {
-                Text(stringResource(R.string.settings_pick_image))
-            }
-            if (settings.usesBackgroundImage) {
-                OutlinedButton(onClick = onClearBackgroundImage) {
-                    Text(stringResource(R.string.settings_remove_image))
-                }
-            }
+            Text(
+                stringResource(
+                    if (settings.usesBackgroundImage) {
+                        R.string.settings_change_image
+                    } else {
+                        R.string.settings_pick_image
+                    },
+                ),
+            )
         }
 
         if (settings.usesBackgroundImage) {
             Text(
-                text = stringResource(R.string.settings_dim),
-                style = MaterialTheme.typography.bodyMedium,
+                text = stringResource(R.string.settings_image_hint),
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(start = 16.dp, top = 8.dp),
-            )
-            Slider(
-                value = settings.backgroundDim,
-                valueRange = 0f..0.9f,
-                onValueChange = onBackgroundDim,
                 modifier = Modifier.padding(horizontal = 16.dp),
             )
+            BarraDeOscurecer(valor = settings.backgroundDim, onChange = onBackgroundDim)
         }
 
         Seccion(stringResource(R.string.settings_now_playing))
@@ -171,6 +171,68 @@ fun SettingsScreen(
             modifier = Modifier.padding(16.dp),
         ) {
             Text(stringResource(R.string.settings_reset))
+        }
+    }
+}
+
+/**
+ * Control para oscurecer la imagen de fondo.
+ *
+ * Los botones de -/+ ocupan las puntas y empujan la barra hacia adentro: los extremos
+ * (imagen a full o bien oscura) quedan lejos del borde de la pantalla, donde con funda
+ * cuesta llegar con el dedo. Ademas van de a saltos parejos, asi que se puede ajustar
+ * sin arrastrar.
+ */
+@Composable
+private fun BarraDeOscurecer(valor: Float, onChange: (Float) -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 16.dp, end = 16.dp, top = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = stringResource(R.string.settings_dim),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            text = stringResource(
+                R.string.settings_dim_value,
+                (valor * 100).roundToInt(),
+            ),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onBackground,
+        )
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        IconButton(onClick = { onChange((valor - DIM_STEP).coerceIn(0f, DIM_MAX)) }) {
+            Icon(
+                imageVector = Icons.Default.Remove,
+                contentDescription = stringResource(R.string.cd_dim_less),
+                tint = MaterialTheme.colorScheme.onBackground,
+            )
+        }
+        Slider(
+            value = valor,
+            valueRange = 0f..DIM_MAX,
+            steps = DIM_STEPS,
+            onValueChange = onChange,
+            modifier = Modifier.weight(1f),
+        )
+        IconButton(onClick = { onChange((valor + DIM_STEP).coerceIn(0f, DIM_MAX)) }) {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = stringResource(R.string.cd_dim_more),
+                tint = MaterialTheme.colorScheme.onBackground,
+            )
         }
     }
 }
@@ -232,3 +294,9 @@ private fun FilaDeColores(
 }
 
 private fun Color.luminance(): Float = 0.299f * red + 0.587f * green + 0.114f * blue
+
+private const val DIM_MAX = 0.9f
+private const val DIM_STEP = 0.05f
+
+/** Cortes intermedios del slider: uno cada [DIM_STEP] entre 0 y [DIM_MAX]. */
+private const val DIM_STEPS = 17

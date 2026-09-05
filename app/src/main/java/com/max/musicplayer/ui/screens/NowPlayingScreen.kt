@@ -1,5 +1,7 @@
 package com.max.musicplayer.ui.screens
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.offset
@@ -60,7 +62,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -77,6 +78,9 @@ import com.max.musicplayer.ui.components.MarqueeText
 import com.max.musicplayer.ui.components.formatDuration
 
 private const val SEEK_STEP_MS = 10_000L
+
+/** Cuanto tarda el fondo en pasar del color de una tapa al de la siguiente. */
+private const val TINT_FADE_MS = 100
 
 /** Linea fina, como en la app de referencia. */
 private val TRACK_HEIGHT = 3.dp
@@ -118,17 +122,21 @@ fun NowPlayingScreen(
     // tema: sin mezclar, un color vivo dejaria el texto ilegible.
     val tinte = rememberArtworkTint(song.id, tintFromArtwork)
     val fondoTema = MaterialTheme.colorScheme.background
-    val pincel = if (tinte != null) {
-        Brush.verticalGradient(
-            listOf(
-                tinte.blendWith(fondoTema, 0.45f),
-                tinte.blendWith(fondoTema, 0.80f),
-                fondoTema,
-            ),
-        )
-    } else {
-        SolidColor(fondoTema)
-    }
+
+    // Los tres cortes del degrade se animan: al cambiar de cancion el color viaja del
+    // anterior al nuevo en vez de pegar un salto (y con imagen de fondo, en vez de
+    // destaparla por un instante).
+    val arriba by animateColorAsState(
+        targetValue = tinte?.blendWith(fondoTema, 0.45f) ?: fondoTema,
+        animationSpec = tween(TINT_FADE_MS),
+        label = "fondoArriba",
+    )
+    val medio by animateColorAsState(
+        targetValue = tinte?.blendWith(fondoTema, 0.80f) ?: fondoTema,
+        animationSpec = tween(TINT_FADE_MS),
+        label = "fondoMedio",
+    )
+    val pincel = Brush.verticalGradient(listOf(arriba, medio, fondoTema))
 
     val tiraState = rememberLazyListState()
 

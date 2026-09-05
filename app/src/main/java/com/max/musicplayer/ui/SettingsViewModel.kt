@@ -28,8 +28,6 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
 
     fun setBackgroundDim(value: Float) = viewModelScope.launch { repo.setBackgroundDim(value) }
 
-    fun clearBackgroundImage() = viewModelScope.launch { repo.setBackgroundImage(null) }
-
     /**
      * Guarda la imagen elegida. Hay que retener el permiso: sin esto la imagen deja de
      * poder leerse cuando se reinicia la app.

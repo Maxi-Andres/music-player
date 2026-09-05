@@ -19,20 +19,24 @@ import kotlinx.coroutines.withContext
  * Color dominante de la caratula de una cancion, para tenir la pantalla de
  * reproduccion (ver docs/reference/04-now-playing.jpeg).
  *
- * Devuelve null mientras carga, si la cancion no tiene tapa o si la opcion esta
- * apagada; en ese caso la pantalla usa el fondo normal.
+ * Devuelve null si la cancion no tiene tapa o si la opcion esta apagada; en ese caso
+ * la pantalla usa el fondo normal.
+ *
+ * Al cambiar de cancion NO vuelve a null: conserva el tinte anterior hasta tener el
+ * nuevo. Si se limpiara, con imagen de fondo puesta el fondo del tema es transparente
+ * y por un instante se veia la foto sin el degrade.
  */
 @Composable
 fun rememberArtworkTint(songId: Long, enabled: Boolean): Color? {
     val context = LocalContext.current
-    var tinte by remember(songId, enabled) { mutableStateOf<Color?>(null) }
+    var tinte by remember { mutableStateOf<Color?>(null) }
 
     LaunchedEffect(songId, enabled) {
         if (!enabled) {
             tinte = null
             return@LaunchedEffect
         }
-        tinte = withContext(Dispatchers.IO) {
+        val nuevo = withContext(Dispatchers.IO) {
             val uri = ContentUris.withAppendedId(
                 MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
                 songId,
@@ -53,6 +57,9 @@ fun rememberArtworkTint(songId: Long, enabled: Boolean): Color? {
 
             if (rgb == 0) null else Color(rgb)
         }
+        // Una tapa ilegible o inexistente deja el tinte anterior: mejor un color viejo
+        // que un salto brusco al fondo pelado.
+        if (nuevo != null) tinte = nuevo
     }
 
     return tinte

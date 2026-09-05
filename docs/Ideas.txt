@@ -13,6 +13,7 @@ los 3 puntos al lado de las carpetas no hacen nada y el boton al lado del que es
 se podrian mejorar los icons, por ejempl oel de aldelantar 10segs es una pija el de la otra app esta mejor
 
 
+
 ------------------------------------------------------------done:
 
 en canciones tambien tiene que estar el buscador por letra
@@ -68,4 +69,7 @@ export const ACCENT_COLORS: { name: AccentColor; hex: string }[] = [
 
 ponerle un icono piola
 
+cuando pones una imagen de fondo y estas en donde se hace el efecto de la miniatura poner el fondo de ese color y cambias de cancion por un segundo se muestra la imagen y despues se le aplica el degrade de color
+el boton de quitar imagen no se ve bien por que esta en dos renglones igual esta al pedo, osea cuando tocas unos de los colores de fondo se saca la imagen
+y la barra para oscurecer imagen es medio incomoda por que si quiero que se vea full por ejemplo me cuesta llegar al borde del celu con lso dedos por que toca con el costado de la funda, es una boludez, no se como se podria solucionar
 
