@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Nota musical simple, en ambar, para el icono de la app. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFB300"
+        android:pathData="M66,30 L66,60.5 C64.2,59.6 62.2,59 60,59 C54.5,59 50,62.6 50,67 C50,71.4 54.5,75 60,75 C65.5,75 70,71.4 70,67 L70,42 L78,44 L78,36 L66,30 Z" />
+    <path
+        android:fillColor="#FFB300"
+        android:pathData="M44,38 L44,64.5 C42.2,63.6 40.2,63 38,63 C32.5,63 28,66.6 28,71 C28,75.4 32.5,79 38,79 C43.5,79 48,75.4 48,71 L48,42 L44,38 Z" />
+</vector>
