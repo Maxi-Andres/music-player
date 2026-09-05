@@ -11,8 +11,25 @@ import java.util.Locale
  */
 object MusicLibrary {
 
+    /** Grupo al que va a parar lo que no arranca con una letra A-Z. */
+    const val OTHER_GROUP = "#"
+
     /**
-     * Clave de ordenamiento: mismo texto sin acentos y en minusculas.
+     * Si el texto arranca con una letra A-Z, ignorando acentos.
+     *
+     * No alcanza con `Char.isLetter()`: eso da true para japones, cirilico, griego y
+     * demas, y entonces esos titulos aparecian como entradas sueltas en la barra de
+     * indice y se ordenaban mezclados entre las letras normales.
+     */
+    internal fun startsWithLatinLetter(text: String): Boolean {
+        val primera = stripAccents(text.trim()).firstOrNull() ?: return false
+        return primera.uppercaseChar() in 'A'..'Z'
+    }
+
+    /**
+     * Clave de ordenamiento: sin acentos, en minusculas y con un prefijo de grupo para
+     * que lo que no arranca con A-Z (numeros, simbolos, otros alfabetos) quede al final
+     * de la lista en vez de colarse arriba.
      *
      * A proposito NO se usa java.text.Collator: con strength PRIMARY trata el espacio
      * como ignorable, y entonces "ambiente" quedaria antes que "a romper". La app de
@@ -20,7 +37,10 @@ object MusicLibrary {
      * o sea que el espacio pesa y va antes que las letras. Comparar la clave como String
      * comun da exactamente ese orden, y ademas es mas rapido y predecible.
      */
-    internal fun sortKey(text: String): String = stripAccents(text).lowercase(Locale.ROOT)
+    internal fun sortKey(text: String): String {
+        val grupo = if (startsWithLatinLetter(text)) "0" else "1"
+        return grupo + stripAccents(text).lowercase(Locale.ROOT)
+    }
 
     private val byName = Comparator<String> { a, b -> sortKey(a).compareTo(sortKey(b)) }
 
@@ -98,8 +118,8 @@ object MusicLibrary {
         labels.map(::indexLetterOf).distinct().sortedWith { a, b ->
             when {
                 a == b -> 0
-                a == "#" -> 1 // el "#" siempre al final
-                b == "#" -> -1
+                a == OTHER_GROUP -> 1 // el "#" siempre al final
+                b == OTHER_GROUP -> -1
                 else -> a.compareTo(b)
             }
         }
@@ -109,9 +129,8 @@ object MusicLibrary {
         labels.indexOfFirst { indexLetterOf(it) == letter }
 
     internal fun indexLetterOf(label: String): String {
-        val first = label.trim().firstOrNull() ?: return "#"
-        if (!first.isLetter()) return "#"
-        return stripAccents(first.toString()).uppercase(Locale.ROOT)
+        if (!startsWithLatinLetter(label)) return OTHER_GROUP
+        return stripAccents(label.trim()).first().uppercaseChar().toString()
     }
 
     private fun normalize(text: String): String =

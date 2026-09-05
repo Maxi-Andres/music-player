@@ -45,7 +45,7 @@ jobs:
       - name: Cobertura (Kover) y verificacion de umbrales
         # koverVerify hace fallar el build si la cobertura baja del minimo
         # definido en build.gradle.kts. Es lo que evita que se agregue codigo sin test.
-        run: ./gradlew koverXmlReport koverHtmlReport koverVerify --stacktrace
+        run: ./gradlew :app:koverXmlReport :app:koverHtmlReport :app:koverVerify --stacktrace
 
       - name: Compilar APK de debug
         run: ./gradlew assembleDebug --stacktrace
@@ -58,7 +58,7 @@ jobs:
           path: |
             app/build/reports/tests/
             app/build/reports/lint-results-*.html
-            build/reports/kover/
+            app/build/reports/kover/
           retention-days: 14
 
       - name: Publicar APK

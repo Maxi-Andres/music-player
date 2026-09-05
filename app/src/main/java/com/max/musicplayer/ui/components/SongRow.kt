@@ -49,12 +49,26 @@ fun SongRow(
         modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(start = 6.dp, end = 12.dp, top = 8.dp, bottom = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        // El menu va a la izquierda: a la derecha chocaba con la barra de letras.
+        IconButton(
+            onClick = onMenuClick,
+            modifier = Modifier.size(28.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Default.MoreVert,
+                contentDescription = stringResource(R.string.action_select),
+                tint = TextSecondary,
+            )
+        }
+
         AlbumArt(
             songId = song.id,
-            modifier = Modifier.size(48.dp),
+            modifier = Modifier
+                .padding(start = 4.dp)
+                .size(48.dp),
         )
 
         Column(
@@ -89,14 +103,6 @@ fun SongRow(
                 style = MaterialTheme.typography.labelMedium,
                 color = TextSecondary,
                 modifier = Modifier.padding(start = 8.dp),
-            )
-        }
-
-        IconButton(onClick = onMenuClick) {
-            Icon(
-                imageVector = Icons.Default.MoreVert,
-                contentDescription = stringResource(R.string.action_select),
-                tint = TextSecondary,
             )
         }
     }

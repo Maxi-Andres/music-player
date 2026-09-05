@@ -142,14 +142,20 @@ fun NowPlayingScreen(
             Spacer(modifier = Modifier.size(48.dp))
         }
 
+        // Espacios flexibles arriba y abajo: la caratula queda mas abajo y el panel
+        // de control mas separado de ella, sin dejar un hueco muerto al final.
+        Spacer(modifier = Modifier.weight(0.5f))
+
         AlbumArt(
             songId = song.id,
             cornerRadius = 16,
             modifier = Modifier
-                .padding(horizontal = 32.dp, vertical = 16.dp)
+                .padding(horizontal = 32.dp)
                 .fillMaxWidth()
                 .aspectRatio(1f),
         )
+
+        Spacer(modifier = Modifier.height(36.dp))
 
         Row(
             modifier = Modifier
@@ -308,7 +314,7 @@ fun NowPlayingScreen(
             }
         }
 
-        Spacer(modifier = Modifier.weight(1f))
+        Spacer(modifier = Modifier.weight(0.5f))
 
         // Tira con las canciones del contexto, como en la referencia.
         if (contextEntries.isNotEmpty()) {
@@ -316,7 +322,7 @@ fun NowPlayingScreen(
                 state = tiraState,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 12.dp),
+                    .padding(top = 12.dp, bottom = 24.dp),
                 contentPadding = PaddingValues(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
@@ -339,7 +345,7 @@ fun NowPlayingScreen(
                 }
             }
         } else {
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }

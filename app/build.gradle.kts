@@ -71,6 +71,32 @@ android {
     }
 }
 
+/**
+ * Cobertura.
+ *
+ * Se mide solo la logica (`data`). La UI de Compose y el servicio de reproduccion
+ * necesitan tests instrumentados, que todavia no existen: incluirlos daria un
+ * porcentaje global sin significado y obligaria a bajar el umbral hasta volverlo inutil.
+ * Cuando esos tests existan, se amplia el filtro.
+ */
+kover {
+    reports {
+        filters {
+            includes {
+                packages("com.max.musicplayer.data")
+            }
+        }
+        verify {
+            rule("Cobertura minima de la logica") {
+                bound {
+                    minValue = 85
+                    coverageUnits = kotlinx.kover.gradle.plugin.dsl.CoverageUnit.LINE
+                }
+            }
+        }
+    }
+}
+
 // Se fija explicitamente porque el plugin de Kotlin no hereda solo el target de Java.
 kotlin {
     compilerOptions {

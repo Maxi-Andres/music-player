@@ -242,6 +242,43 @@ class MusicLibraryTest {
     }
 
     @Test
+    fun `los titulos con caracteres raros van al final, no arriba`() {
+        val songs = listOf(
+            song(id = 1, title = "雨に唄えば"),
+            song(id = 2, title = "Zapato"),
+            song(id = 3, title = "3 Doors Down"),
+            song(id = 4, title = "Айсберг"),
+            song(id = 5, title = "Abrelatas"),
+            song(id = 6, title = "_borrador"),
+        )
+
+        val titulos = MusicLibrary.sortSongs(songs, SongSort.TITLE_ASC).map { it.title }
+
+        // Primero las que arrancan con A-Z, en orden; despues todo lo demas.
+        assertThat(titulos.take(2)).containsExactly("Abrelatas", "Zapato").inOrder()
+        assertThat(titulos.drop(2))
+            .containsExactly("3 Doors Down", "_borrador", "Айсберг", "雨に唄えば")
+    }
+
+    @Test
+    fun `japones y cirilico se agrupan bajo almohadilla, no como letras sueltas`() {
+        // Char.isLetter() da true para estos, y antes aparecian como entradas propias
+        // en la barra de indice (ゆ, イ, 雨...).
+        assertThat(MusicLibrary.indexLetterOf("雨に唄えば")).isEqualTo("#")
+        assertThat(MusicLibrary.indexLetterOf("Айсберг")).isEqualTo("#")
+        assertThat(MusicLibrary.indexLetterOf("ゆめ")).isEqualTo("#")
+    }
+
+    @Test
+    fun `el indice de una lista mezclada tiene solo letras A-Z y almohadilla`() {
+        val letras = MusicLibrary.alphabetIndex(
+            listOf("Abrelatas", "雨に唄えば", "Zapato", "Айсберг", "3 Doors Down"),
+        )
+
+        assertThat(letras).containsExactly("A", "Z", "#").inOrder()
+    }
+
+    @Test
     fun `las letras acentuadas se indexan bajo su letra base`() {
         assertThat(MusicLibrary.indexLetterOf("Ángeles")).isEqualTo("A")
         assertThat(MusicLibrary.indexLetterOf("Éxito")).isEqualTo("E")

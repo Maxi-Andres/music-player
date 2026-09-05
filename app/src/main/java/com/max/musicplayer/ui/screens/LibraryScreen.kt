@@ -62,6 +62,9 @@ import com.max.musicplayer.ui.components.SongRow
 import com.max.musicplayer.ui.theme.TextSecondary
 import kotlinx.coroutines.launch
 
+/** Ancho que hay que reservar a la derecha para la barra de indice superpuesta. */
+private val INDEX_BAR_SPACE = 30.dp
+
 /** Solo las pestanias que estan implementadas; no se muestran tabs sin contenido. */
 private val TABS = listOf(LibraryTab.SONGS, LibraryTab.FOLDERS)
 
@@ -291,7 +294,14 @@ private fun SongsTab(
             if (songs.isEmpty() && !isScanning) {
                 EmptyMessage(stringResource(R.string.empty_library))
             } else {
-                LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
+                LazyColumn(
+                    state = listState,
+                    // Deja libre el ancho de la barra de letras, que va superpuesta:
+                    // si no, tapa la fecha de cada cancion.
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(end = INDEX_BAR_SPACE),
+                ) {
                     items(songs.size, key = { songs[it].id }) { indice ->
                         val song = songs[indice]
                         SongRow(
@@ -371,7 +381,12 @@ private fun FoldersTab(
         }
 
         Box(modifier = Modifier.weight(1f)) {
-            LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
+            LazyColumn(
+                state = listState,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(end = INDEX_BAR_SPACE),
+            ) {
                 // Mientras se busca no se muestra: no es un resultado y descuadra
                 // el conteo del encabezado.
                 if (showDirectories) {

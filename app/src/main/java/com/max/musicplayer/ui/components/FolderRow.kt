@@ -42,14 +42,26 @@ fun FolderRow(
         modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 10.dp),
+            .padding(start = 6.dp, end = 12.dp, top = 10.dp, bottom = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        // Igual que en las canciones: el menu va a la izquierda para no chocar
+        // con la barra de letras.
+        IconButton(onClick = onMenuClick, modifier = Modifier.size(28.dp)) {
+            Icon(
+                imageVector = Icons.Default.MoreVert,
+                contentDescription = stringResource(R.string.action_select),
+                tint = TextSecondary,
+            )
+        }
+
         Icon(
             imageVector = Icons.Default.Folder,
             contentDescription = null,
             tint = FolderAmber,
-            modifier = Modifier.size(44.dp),
+            modifier = Modifier
+                .padding(start = 4.dp)
+                .size(44.dp),
         )
 
         Column(
@@ -71,14 +83,6 @@ fun FolderRow(
                 color = TextSecondary,
             )
         }
-
-        IconButton(onClick = onMenuClick) {
-            Icon(
-                imageVector = Icons.Default.MoreVert,
-                contentDescription = stringResource(R.string.action_select),
-                tint = TextSecondary,
-            )
-        }
     }
 }
 
@@ -92,7 +96,7 @@ fun DirectoriesRow(onClick: () -> Unit, modifier: Modifier = Modifier) {
         modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 14.dp),
+            .padding(start = 38.dp, end = 12.dp, top = 14.dp, bottom = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
