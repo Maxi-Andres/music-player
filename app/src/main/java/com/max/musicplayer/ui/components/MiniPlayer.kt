@@ -55,7 +55,7 @@ fun MiniPlayer(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         AlbumArt(
-            uri = song.albumArtUri,
+            songId = song.id,
             modifier = Modifier
                 .size(46.dp)
                 .clip(CircleShape),

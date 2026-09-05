@@ -25,6 +25,16 @@ android {
             enableAndroidTestCoverage = true
             enableUnitTestCoverage = false // la de unit tests la maneja Kover
         }
+        // Build para medir rendimiento: igual que release pero sin ofuscar y firmado
+        // con la clave de debug. Un build debug de Compose es varias veces mas lento,
+        // asi que medir jank sobre debug no dice nada util.
+        create("profile") {
+            initWith(getByName("release"))
+            isMinifyEnabled = false
+            isShrinkResources = false
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += listOf("release")
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true

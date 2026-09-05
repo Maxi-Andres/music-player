@@ -26,7 +26,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil3.compose.SubcomposeAsyncImage
+import coil3.compose.AsyncImage
+import com.max.musicplayer.ui.AudioArtwork
 import com.max.musicplayer.R
 import com.max.musicplayer.data.Song
 import com.max.musicplayer.ui.theme.TextSecondary
@@ -52,7 +53,7 @@ fun SongRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         AlbumArt(
-            uri = song.albumArtUri,
+            songId = song.id,
             modifier = Modifier.size(48.dp),
         )
 
@@ -108,12 +109,16 @@ private fun subtitleFor(song: Song): String {
 }
 
 /**
- * Caratula del album. Muchos archivos no tienen ninguna, asi que siempre hay
- * un placeholder con nota musical detras (como en la referencia).
+ * Caratula de la cancion.
+ *
+ * El placeholder se dibuja *detras* y la imagen encima: asi no hace falta
+ * `SubcomposeAsyncImage` (que crea una subcomposicion por fila y hace tironear el
+ * scroll en listas largas). Si el archivo no tiene tapa, simplemente sigue viendose
+ * el placeholder.
  */
 @Composable
 fun AlbumArt(
-    uri: String,
+    songId: Long,
     modifier: Modifier = Modifier,
     cornerRadius: Int = 8,
 ) {
@@ -124,28 +129,17 @@ fun AlbumArt(
             .background(MaterialTheme.colorScheme.surfaceVariant),
         contentAlignment = Alignment.Center,
     ) {
-        SubcomposeAsyncImage(
-            model = uri,
-            contentDescription = stringResource(R.string.cd_album_art),
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize(),
-            loading = { ArtPlaceholder() },
-            error = { ArtPlaceholder() },
-        )
-    }
-}
-
-@Composable
-private fun ArtPlaceholder() {
-    Box(
-        modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant),
-        contentAlignment = Alignment.Center,
-    ) {
         Icon(
             imageVector = Icons.Default.MusicNote,
             contentDescription = null,
             tint = TextSecondary,
             modifier = Modifier.size(22.dp),
+        )
+        AsyncImage(
+            model = AudioArtwork(songId),
+            contentDescription = stringResource(R.string.cd_album_art),
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize(),
         )
     }
 }
