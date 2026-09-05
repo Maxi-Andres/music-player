@@ -25,8 +25,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.max.musicplayer.R
-import com.max.musicplayer.ui.theme.Amber
-import com.max.musicplayer.ui.theme.TextSecondary
 
 /**
  * Cabecera de lista: "N Canciones", el boton de ordenar y el de seleccion multiple.
@@ -55,7 +53,7 @@ fun ListHeader(
             Text(
                 text = " $subtitle",
                 style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondary,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = 4.dp),
             )
         }
@@ -71,7 +69,7 @@ fun ListHeader(
                     tint = MaterialTheme.colorScheme.onBackground,
                 )
             }
-            Text("|", color = TextSecondary)
+            Text("|", color = MaterialTheme.colorScheme.onSurfaceVariant)
             IconButton(onClick = onSelectClick) {
                 Icon(
                     imageVector = Icons.Default.Checklist,
@@ -98,7 +96,7 @@ fun PlayActionPills(
 ) {
     val contenedor = if (filled) Color.White else MaterialTheme.colorScheme.surfaceVariant
     val contenido = if (filled) Color(0xFF101010) else MaterialTheme.colorScheme.onBackground
-    val tinteIcono = if (filled) Color(0xFF101010) else Amber
+    val tinteIcono = if (filled) Color(0xFF101010) else MaterialTheme.colorScheme.primary
 
     Row(
         modifier = modifier

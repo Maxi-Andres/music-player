@@ -71,8 +71,6 @@ import com.max.musicplayer.data.Song
 import com.max.musicplayer.ui.components.AlbumArt
 import com.max.musicplayer.ui.components.MarqueeText
 import com.max.musicplayer.ui.components.formatDuration
-import com.max.musicplayer.ui.theme.Amber
-import com.max.musicplayer.ui.theme.TextSecondary
 
 private const val SEEK_STEP_MS = 10_000L
 
@@ -185,7 +183,7 @@ fun NowPlayingScreen(
                 Text(
                     text = song.displayArtist,
                     style = MaterialTheme.typography.bodyLarge,
-                    color = TextSecondary,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -202,7 +200,7 @@ fun NowPlayingScreen(
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.PlaylistPlay,
                         contentDescription = stringResource(R.string.cd_queue),
-                        tint = if (queuedCount > 0) Amber else MaterialTheme.colorScheme.onBackground,
+                        tint = if (queuedCount > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground,
                     )
                 }
                 // Contador de temas encolados a mano; si no encolaste nada, no aparece.
@@ -210,7 +208,7 @@ fun NowPlayingScreen(
                     Text(
                         text = queuedCount.toString(),
                         style = MaterialTheme.typography.labelSmall,
-                        color = Amber,
+                        color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.align(Alignment.TopEnd),
                     )
                 }
@@ -267,7 +265,7 @@ fun NowPlayingScreen(
                 Icon(
                     imageVector = Icons.Default.Shuffle,
                     contentDescription = stringResource(R.string.action_shuffle),
-                    tint = if (shuffleEnabled) Amber else MaterialTheme.colorScheme.onBackground,
+                    tint = if (shuffleEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground,
                 )
             }
             IconButton(onClick = onPrevious) {
@@ -312,9 +310,9 @@ fun NowPlayingScreen(
                     },
                     contentDescription = stringResource(R.string.cd_repeat),
                     tint = if (repeatMode == Player.REPEAT_MODE_OFF) {
-                        TextSecondary
+                        MaterialTheme.colorScheme.onSurfaceVariant
                     } else {
-                        Amber
+                        MaterialTheme.colorScheme.primary
                     },
                 )
             }
@@ -339,7 +337,7 @@ fun NowPlayingScreen(
                             .size(56.dp)
                             .then(
                                 if (esActual) {
-                                    Modifier.border(2.dp, Amber, RoundedCornerShape(8.dp))
+                                    Modifier.border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(8.dp))
                                 } else {
                                     Modifier
                                 },

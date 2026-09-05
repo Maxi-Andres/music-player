@@ -45,8 +45,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.max.musicplayer.R
-import com.max.musicplayer.ui.theme.Amber
-import com.max.musicplayer.ui.theme.TextSecondary
 
 /**
  * Ecualizador del sistema aplicado a la sesion de audio de la app.
@@ -138,7 +136,7 @@ private fun NoEqualizer(audioSessionId: Int) {
             text = stringResource(
                 if (haySistema) R.string.eq_unavailable else R.string.eq_no_system,
             ),
-            color = TextSecondary,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
         if (haySistema) {
@@ -213,7 +211,7 @@ private fun EqualizerControls(equalizer: Equalizer) {
                     label = { Text(nombre) },
                     colors = AssistChipDefaults.assistChipColors(
                         labelColor = if (indice == presetActual) {
-                            Amber
+                            MaterialTheme.colorScheme.primary
                         } else {
                             MaterialTheme.colorScheme.onBackground
                         },
@@ -249,8 +247,8 @@ private fun EqualizerControls(equalizer: Equalizer) {
                         }
                     },
                     colors = SliderDefaults.colors(
-                        thumbColor = Amber,
-                        activeTrackColor = Amber,
+                        thumbColor = MaterialTheme.colorScheme.primary,
+                        activeTrackColor = MaterialTheme.colorScheme.primary,
                         inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant,
                     ),
                     modifier = Modifier
@@ -273,7 +271,7 @@ private fun EqualizerControls(equalizer: Equalizer) {
                 Text(
                     text = formatFrequency(frecuencia),
                     style = MaterialTheme.typography.labelSmall,
-                    color = TextSecondary,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }

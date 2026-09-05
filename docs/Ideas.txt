@@ -1,5 +1,3 @@
-Que se pueda personalizar, tipo poner un fondo especifico, o los colores de las carpetas, o directamente un color en el fondo, el color de acento, cosas asi, que al lado de buscar haya un engranaje y que te lleve a la pestaña de personalizacion
-
 poner tipo release? asi entro a github y lo descargo de ahi y a la mierda para que sea mas facil tipo descargarlo en otro celu o lo que sea
 
 que se puedan borrar canciones, tipo viste los audios de whatsap poronga
@@ -10,7 +8,30 @@ La función de Spotify que buscas se llama Sesión remota (o Sesión grupal), la
 
 en las notificaciones esta la opcion para repetir, me parace mejor la opcion para random?
 
+los 3 puntos al lado de las carpetas no hacen nada y el boton al lado del que es para ordenar tampoco hace nada
+
 se podrian mejorar los icons, por ejempl oel de aldelantar 10segs es una pija el de la otra app esta mejor
+
+que la lista de iconos de canciones este un poco mas arriba 10% mas
+
+colores pastel
+export const ACCENT_COLORS: { name: AccentColor; hex: string }[] = [
+  { name: 'white', hex: '#ffffff' },
+  { name: 'rosewater', hex: '#f5e0dc' },
+  { name: 'flamingo', hex: '#f2cdcd' },
+  { name: 'pink', hex: '#f5c2e7' },
+  { name: 'mauve', hex: '#cba6f7' },
+  { name: 'red', hex: '#f38ba8' },
+  { name: 'maroon', hex: '#eba0ac' },
+  { name: 'peach', hex: '#fab387' },
+  { name: 'yellow', hex: '#f9e2af' },
+  { name: 'green', hex: '#a6e3a1' },
+  { name: 'teal', hex: '#94e2d5' },
+  { name: 'sky', hex: '#89dceb' },
+  { name: 'sapphire', hex: '#74c7ec' },
+  { name: 'blue', hex: '#89b4fa' },
+  { name: 'lavender', hex: '#b4befe' },
+]
 
 ------------------------------------------------------------done:
 
@@ -41,3 +62,5 @@ esta bien que colapse, pero ahora moviste lo de canciones y carpetas como a la i
 el tiempo de la barra se tiene que mover con la barra, osea pasa a ser la barra eso es lo que moves y lo que se tiene que ir moviendo conforme avanza la cancion
 
 que la barra que te pone la musica sea mas grande, es como re chica, que llegue mas cerca a los 10 de los costados, de esta manera tambien va a dar un control mas fino de cuanto estas adelantando, y tambien que sea mas finita la barra en si y que la pill tenga menos padding
+
+Que se pueda personalizar, tipo poner un fondo especifico, o los colores de las carpetas, o directamente un color en el fondo, el color de acento, cosas asi, que al lado de buscar haya un engranaje y que te lleve a la pestaña de personalizacion

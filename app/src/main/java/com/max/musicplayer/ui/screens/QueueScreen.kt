@@ -43,8 +43,6 @@ import androidx.compose.ui.zIndex
 import com.max.musicplayer.R
 import com.max.musicplayer.data.QueueEntry
 import com.max.musicplayer.ui.components.AlbumArt
-import com.max.musicplayer.ui.theme.Amber
-import com.max.musicplayer.ui.theme.TextSecondary
 import kotlin.math.roundToInt
 
 private val ROW_HEIGHT = 64.dp
@@ -106,7 +104,7 @@ fun QueueScreen(
             )
             if (queued.isNotEmpty()) {
                 TextButton(onClick = onClearAll) {
-                    Text(stringResource(R.string.queue_clear), color = Amber)
+                    Text(stringResource(R.string.queue_clear), color = MaterialTheme.colorScheme.primary)
                 }
             }
         }
@@ -115,7 +113,7 @@ fun QueueScreen(
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
                     text = stringResource(R.string.queue_empty_explained),
-                    color = TextSecondary,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(32.dp),
                 )
@@ -218,7 +216,7 @@ private fun QueueRow(
             Text(
                 text = entry.song.displayArtist,
                 style = MaterialTheme.typography.bodySmall,
-                color = TextSecondary,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -228,7 +226,7 @@ private fun QueueRow(
             Icon(
                 imageVector = Icons.Default.Close,
                 contentDescription = stringResource(R.string.queue_remove),
-                tint = TextSecondary,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         Box(
@@ -237,7 +235,7 @@ private fun QueueRow(
             Icon(
                 imageVector = Icons.Default.DragHandle,
                 contentDescription = stringResource(R.string.queue_reorder),
-                tint = TextSecondary,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(28.dp),
             )
         }

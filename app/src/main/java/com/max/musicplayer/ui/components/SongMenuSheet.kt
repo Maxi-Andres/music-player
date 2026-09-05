@@ -27,7 +27,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.max.musicplayer.R
 import com.max.musicplayer.data.Song
-import com.max.musicplayer.ui.theme.TextSecondary
 
 /**
  * Menu de los tres puntos de una cancion.
@@ -70,7 +69,7 @@ fun SongMenuSheet(
                     Text(
                         text = song.displayArtist,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = TextSecondary,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )

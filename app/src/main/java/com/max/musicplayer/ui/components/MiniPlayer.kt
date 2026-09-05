@@ -29,7 +29,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.max.musicplayer.R
 import com.max.musicplayer.data.Song
-import com.max.musicplayer.ui.theme.TextSecondary
 
 /**
  * Barra fija de abajo con lo que esta sonando
@@ -75,7 +74,7 @@ fun MiniPlayer(
             Text(
                 text = song.displayArtist,
                 style = MaterialTheme.typography.bodySmall,
-                color = TextSecondary,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )

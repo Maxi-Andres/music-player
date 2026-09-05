@@ -25,7 +25,6 @@ import com.max.musicplayer.data.DirectoryNode
 import com.max.musicplayer.data.Song
 import com.max.musicplayer.ui.components.FolderRow
 import com.max.musicplayer.ui.components.SongRow
-import com.max.musicplayer.ui.theme.TextSecondary
 
 /**
  * Navegador de archivos nivel por nivel (la entrada "Directorios" de la
@@ -65,7 +64,7 @@ fun DirectoryScreen(
                         Text(
                             text = path,
                             style = MaterialTheme.typography.bodySmall,
-                            color = TextSecondary,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
@@ -110,7 +109,7 @@ fun DirectoryScreen(
                 item {
                     Text(
                         text = stringResource(R.string.empty_library),
-                        color = TextSecondary,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(24.dp),
                     )
                 }

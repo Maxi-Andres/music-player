@@ -23,8 +23,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.max.musicplayer.R
-import com.max.musicplayer.ui.theme.FolderAmber
-import com.max.musicplayer.ui.theme.TextSecondary
+import com.max.musicplayer.ui.theme.LocalFolderColor
 
 /**
  * Fila de carpeta, como en docs/reference/02-tab-carpetas.jpeg:
@@ -51,14 +50,14 @@ fun FolderRow(
             Icon(
                 imageVector = Icons.Default.MoreVert,
                 contentDescription = stringResource(R.string.action_select),
-                tint = TextSecondary,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
 
         Icon(
             imageVector = Icons.Default.Folder,
             contentDescription = null,
-            tint = FolderAmber,
+            tint = LocalFolderColor.current,
             modifier = Modifier
                 .padding(start = 4.dp)
                 .size(44.dp),
@@ -80,7 +79,7 @@ fun FolderRow(
             Text(
                 text = pluralStringResource(R.plurals.song_count, songCount, songCount),
                 style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondary,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
@@ -102,7 +101,7 @@ fun DirectoriesRow(onClick: () -> Unit, modifier: Modifier = Modifier) {
         Icon(
             imageVector = Icons.Default.SnippetFolder,
             contentDescription = null,
-            tint = FolderAmber,
+            tint = LocalFolderColor.current,
             modifier = Modifier.size(44.dp),
         )
         Text(

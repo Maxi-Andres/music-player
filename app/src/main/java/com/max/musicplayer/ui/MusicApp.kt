@@ -21,6 +21,7 @@ import com.max.musicplayer.ui.screens.FolderDetailScreen
 import com.max.musicplayer.ui.screens.LibraryScreen
 import com.max.musicplayer.ui.screens.NowPlayingScreen
 import com.max.musicplayer.ui.screens.QueueScreen
+import com.max.musicplayer.ui.screens.SettingsScreen
 
 /** Pantalla actual. Navegacion por estado: el arbol es chico y asi es mas facil de seguir. */
 private sealed interface Destino {
@@ -30,10 +31,14 @@ private sealed interface Destino {
     data object NowPlaying : Destino
     data object Queue : Destino
     data object Equalizer : Destino
+    data object Settings : Destino
 }
 
 @Composable
-fun MusicApp(vm: MusicViewModel = viewModel()) {
+fun MusicApp(
+    vm: MusicViewModel = viewModel(),
+    settingsVm: SettingsViewModel = viewModel(),
+) {
     LaunchedEffect(Unit) { vm.start() }
 
     // Pila de navegacion: sin ella, volver desde "Reproduciendo" siempre caia en la
@@ -114,6 +119,7 @@ fun MusicApp(vm: MusicViewModel = viewModel()) {
             onSongMenu = { cancionDelMenu = it },
             onFolderClick = { path -> navegar(Destino.Folder(path)) },
             onDirectoriesClick = { navegar(Destino.Directory(vm.directoryRoot.value)) },
+            onOpenSettings = { navegar(Destino.Settings) },
             onShuffleAll = { vm.shufflePlay(visibleSongs) },
             onPlayAll = { vm.play(visibleSongs, 0) },
             bottomBar = bottomBar,
@@ -196,6 +202,21 @@ fun MusicApp(vm: MusicViewModel = viewModel()) {
             onMove = { desde, hasta -> vm.player.moveInQueue(desde, hasta) },
             onClearAll = { vm.player.clearEphemeral() },
         )
+
+        Destino.Settings -> {
+            val ajustes by settingsVm.settings.collectAsStateWithLifecycle()
+            SettingsScreen(
+                settings = ajustes,
+                onBack = { volverAtras() },
+                onAccentColor = settingsVm::setAccentColor,
+                onBackgroundColor = settingsVm::setBackgroundColor,
+                onFolderColor = settingsVm::setFolderColor,
+                onBackgroundImage = settingsVm::setBackgroundImage,
+                onClearBackgroundImage = { settingsVm.clearBackgroundImage() },
+                onBackgroundDim = settingsVm::setBackgroundDim,
+                onReset = { settingsVm.resetAll() },
+            )
+        }
 
         Destino.Equalizer -> EqualizerScreen(
             audioSessionId = playback.audioSessionId,

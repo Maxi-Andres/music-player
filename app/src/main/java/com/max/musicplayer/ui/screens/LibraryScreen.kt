@@ -19,6 +19,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -62,7 +63,6 @@ import com.max.musicplayer.ui.components.ListHeader
 import com.max.musicplayer.ui.components.PlayActionPills
 import com.max.musicplayer.ui.components.ScrollToTopButton
 import com.max.musicplayer.ui.components.SongRow
-import com.max.musicplayer.ui.theme.TextSecondary
 import kotlinx.coroutines.launch
 
 /** Ancho que hay que reservar a la derecha para la barra de indice superpuesta. */
@@ -109,6 +109,7 @@ fun LibraryScreen(
     onSongMenu: (Song) -> Unit,
     onFolderClick: (String) -> Unit,
     onDirectoriesClick: () -> Unit,
+    onOpenSettings: () -> Unit,
     onShuffleAll: () -> Unit,
     onPlayAll: () -> Unit,
     bottomBar: @Composable () -> Unit,
@@ -175,6 +176,13 @@ fun LibraryScreen(
                             tint = MaterialTheme.colorScheme.onBackground,
                         )
                     }
+                    IconButton(onClick = onOpenSettings) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = stringResource(R.string.action_settings),
+                            tint = MaterialTheme.colorScheme.onBackground,
+                        )
+                    }
                 }
             }
 
@@ -202,7 +210,7 @@ fun LibraryScreen(
                                 color = if (seleccionada) {
                                     MaterialTheme.colorScheme.onBackground
                                 } else {
-                                    TextSecondary
+                                    MaterialTheme.colorScheme.onSurfaceVariant
                                 },
                             )
                         },
@@ -282,11 +290,7 @@ private fun SongsTab(
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
             state = listState,
-            // Deja libre el ancho de la barra de letras, que va superpuesta:
-            // si no, tapa la fecha de cada cancion.
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(end = INDEX_BAR_SPACE),
+            modifier = Modifier.fillMaxSize(),
         ) {
             // La cabecera es el item 0: se va al scrollear y quedan mas canciones.
             item(key = "header") {
@@ -325,6 +329,10 @@ private fun SongsTab(
                         song = song,
                         onClick = { onSongClick(indice) },
                         onMenuClick = { onSongMenu(song) },
+                        // Solo las filas dejan lugar a la barra de letras. Si el hueco
+                        // se le pone a la lista entera, la cabecera y los botones
+                        // Aleatorio/Reproducir quedan corridos a la izquierda.
+                        modifier = Modifier.padding(end = INDEX_BAR_SPACE),
                     )
                 }
             }
@@ -399,9 +407,7 @@ private fun FoldersTab(
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
             state = listState,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(end = INDEX_BAR_SPACE),
+            modifier = Modifier.fillMaxSize(),
         ) {
             item(key = "header") {
                 Box {
@@ -429,7 +435,12 @@ private fun FoldersTab(
             // Mientras se busca no se muestra: no es un resultado y descuadra
             // el conteo del encabezado.
             if (showDirectories) {
-                item(key = "directorios") { DirectoriesRow(onClick = onDirectoriesClick) }
+                item(key = "directorios") {
+                    DirectoriesRow(
+                        onClick = onDirectoriesClick,
+                        modifier = Modifier.padding(end = INDEX_BAR_SPACE),
+                    )
+                }
             }
 
             items(folders, key = { it.path }) { carpeta ->
@@ -438,6 +449,7 @@ private fun FoldersTab(
                     songCount = carpeta.songCount,
                     onClick = { onFolderClick(carpeta.path) },
                     onMenuClick = {},
+                    modifier = Modifier.padding(end = INDEX_BAR_SPACE),
                 )
             }
         }
@@ -480,7 +492,7 @@ private fun EmptyMessage(text: String) {
             .height(200.dp),
         contentAlignment = Alignment.Center,
     ) {
-        Text(text = text, color = TextSecondary)
+        Text(text = text, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
@@ -528,7 +540,7 @@ private fun SearchField(
                     Text(
                         text = stringResource(R.string.action_search),
                         style = MaterialTheme.typography.bodyLarge,
-                        color = TextSecondary,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
                 inner()

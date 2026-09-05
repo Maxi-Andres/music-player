@@ -30,7 +30,6 @@ import coil3.compose.AsyncImage
 import com.max.musicplayer.ui.AudioArtwork
 import com.max.musicplayer.R
 import com.max.musicplayer.data.Song
-import com.max.musicplayer.ui.theme.TextSecondary
 
 /**
  * Fila de cancion, igual que en docs/reference/01-tab-canciones.jpeg:
@@ -60,7 +59,7 @@ fun SongRow(
             Icon(
                 imageVector = Icons.Default.MoreVert,
                 contentDescription = stringResource(R.string.action_select),
-                tint = TextSecondary,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
 
@@ -91,7 +90,7 @@ fun SongRow(
             Text(
                 text = subtitleFor(song),
                 style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondary,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -101,7 +100,7 @@ fun SongRow(
             Text(
                 text = formatShortDate(song.dateModifiedSeconds),
                 style = MaterialTheme.typography.labelMedium,
-                color = TextSecondary,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = 8.dp),
             )
         }
@@ -138,7 +137,7 @@ fun AlbumArt(
         Icon(
             imageVector = Icons.Default.MusicNote,
             contentDescription = null,
-            tint = TextSecondary,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.size(22.dp),
         )
         AsyncImage(

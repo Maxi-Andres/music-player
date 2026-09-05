@@ -42,6 +42,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.max.musicplayer.R
+import com.max.musicplayer.ui.theme.LocalFolderColor
 import com.max.musicplayer.data.MusicLibrary
 import com.max.musicplayer.data.Song
 import com.max.musicplayer.data.SongSort
@@ -50,8 +51,6 @@ import com.max.musicplayer.ui.components.ListHeader
 import com.max.musicplayer.ui.components.PlayActionPills
 import com.max.musicplayer.ui.components.ScrollToTopButton
 import com.max.musicplayer.ui.components.SongRow
-import com.max.musicplayer.ui.theme.Amber
-import com.max.musicplayer.ui.theme.FolderAmber
 import kotlinx.coroutines.launch
 
 /**
@@ -110,7 +109,7 @@ fun FolderDetailScreen(
                             Icon(
                                 imageVector = Icons.Default.Folder,
                                 contentDescription = null,
-                                tint = FolderAmber,
+                                tint = LocalFolderColor.current,
                                 modifier = Modifier.size(56.dp),
                             )
                             Text(

@@ -32,7 +32,6 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.max.musicplayer.ui.theme.Amber
 import kotlinx.coroutines.delay
 
 /** Alto de cada letra en la barra. */
@@ -148,7 +147,7 @@ fun AlphabetIndex(
                         fontSize = 12.sp,
                         lineHeight = 12.sp,
                         fontWeight = if (activa) FontWeight.Bold else FontWeight.Medium,
-                        color = if (activa) Amber else MaterialTheme.colorScheme.onBackground,
+                        color = if (activa) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground,
                     )
                 }
             }
@@ -176,14 +175,14 @@ private fun LetterBubble(letter: String, modifier: Modifier = Modifier) {
         modifier = modifier
             .size(BUBBLE_SIZE)
             .clip(RoundedCornerShape(14.dp))
-            .background(Amber.copy(alpha = 0.14f)),
+            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             text = letter,
             fontSize = 34.sp,
             fontWeight = FontWeight.Bold,
-            color = Amber,
+            color = MaterialTheme.colorScheme.primary,
         )
     }
 }

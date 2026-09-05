@@ -75,4 +75,14 @@ Usá el menú ⋮ de una canción para agregarla acá; suena a continuación y d
     <string name="eq_unavailable">Tu teléfono no deja que esta app controle el ecualizador directamente. Podés usar el del sistema.</string>
     <string name="eq_open_system">Abrir el ecualizador del sistema</string>
     <string name="eq_no_system">Tu teléfono tampoco tiene un ecualizador del sistema</string>
+
+    <string name="settings_title">Personalización</string>
+    <string name="settings_accent">Color de acento</string>
+    <string name="settings_background">Color de fondo</string>
+    <string name="settings_folder_color">Color de las carpetas</string>
+    <string name="settings_pick_image">Elegir imagen de fondo</string>
+    <string name="settings_remove_image">Quitar imagen</string>
+    <string name="settings_dim">Oscurecer la imagen</string>
+    <string name="settings_reset">Restablecer todo</string>
+    <string name="action_settings">Personalizar</string>
 </resources>

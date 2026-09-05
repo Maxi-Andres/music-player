@@ -29,7 +29,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.max.musicplayer.R
-import com.max.musicplayer.ui.theme.TextSecondary
 
 /** Permiso de lectura de audio segun la version de Android. */
 val audioPermission: String
@@ -104,7 +103,7 @@ fun PermissionGate(content: @Composable () -> Unit) {
                 if (yaPregunto) R.string.permission_denied_body else R.string.permission_body,
             ),
             style = MaterialTheme.typography.bodyMedium,
-            color = TextSecondary,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(top = 12.dp, bottom = 24.dp),
         )
