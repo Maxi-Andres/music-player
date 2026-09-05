@@ -10,6 +10,7 @@ import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.MoreExecutors
 import com.max.musicplayer.data.PlayQueue
+import com.max.musicplayer.data.QueueEntry
 import com.max.musicplayer.data.Song
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -68,6 +69,12 @@ class PlayerConnection(
      * la app, la accion se guarda aca y se ejecuta al conectar, en vez de perderse.
      */
     private var accionPendiente: (() -> Unit)? = null
+
+    /**
+     * Orden original del contexto, para poder volver atras al desactivar el aleatorio.
+     */
+    private var contextoOriginal: List<QueueEntry> = emptyList()
+    private var mezclado = false
 
     private val _state = MutableStateFlow(PlaybackUiState())
     val state: StateFlow<PlaybackUiState> = _state.asStateFlow()
@@ -141,32 +148,103 @@ class PlayerConnection(
             isPlaying = player.isPlaying,
             positionMs = player.currentPosition.coerceAtLeast(0L),
             durationMs = player.duration.coerceAtLeast(0L),
-            shuffleEnabled = player.shuffleModeEnabled,
+            // El aleatorio es nuestro, no el de ExoPlayer (ver toggleShuffle).
+            shuffleEnabled = mezclado,
             repeatMode = player.repeatMode,
         )
     }
 
     // --- comandos ---
 
-    /** Arranca una lista nueva (una carpeta, todas las canciones) desde [startIndex]. */
-    fun playContext(songs: List<Song>, startIndex: Int) {
+    /**
+     * Arranca una lista nueva (una carpeta, todas las canciones) desde [startIndex].
+     * Con [shuffle] la lista se mezcla de verdad, dejando primero la elegida.
+     */
+    fun playContext(songs: List<Song>, startIndex: Int, shuffle: Boolean = false) {
         if (songs.isEmpty()) return
         val c = controller ?: run {
-            accionPendiente = { playContext(songs, startIndex) }
+            accionPendiente = { playContext(songs, startIndex, shuffle) }
             return
         }
 
-        val nueva = PlayQueue.fromContext(songs, startIndex, uidFrom = nextUid)
+        val base = songs.mapIndexed { i, s -> QueueEntry(nextUid + i, s) }
         nextUid += songs.size
+        contextoOriginal = base
+        mezclado = shuffle
 
+        val elegida = base.getOrNull(startIndex.coerceIn(0, base.lastIndex)) ?: base.first()
+        val orden = if (shuffle) {
+            listOf(elegida) + base.filter { it.uid != elegida.uid }.shuffled()
+        } else {
+            base
+        }
+        val indice = orden.indexOfFirst { it.uid == elegida.uid }
+
+        val nueva = PlayQueue(orden, indice)
         _queue.value = nueva
-        c.setMediaItems(
-            nueva.entries.map { it.song.toMediaItem(it.uid) },
-            nueva.currentIndex.coerceAtLeast(0),
-            0L,
-        )
+        c.setMediaItems(nueva.entries.map { it.song.toMediaItem(it.uid) }, indice, 0L)
         c.prepare()
         c.play()
+    }
+
+    /**
+     * Activa o desactiva el aleatorio reordenando la lista de verdad.
+     *
+     * A proposito NO se usa `shuffleModeEnabled` de ExoPlayer: ese mantiene un orden de
+     * reproduccion interno que la app no ve, y entonces la tira de canciones mostraba un
+     * orden y el reproductor seguia otro. Cuando el orden interno se terminaba, la
+     * reproduccion frenaba y "siguiente" no hacia nada aunque en pantalla hubiera temas
+     * mas adelante. Mezclando la lista real, lo que ves es lo que suena.
+     */
+    fun toggleShuffle() {
+        val c = controller ?: return
+        val q = _queue.value
+        val actual = q.current ?: return
+
+        mezclado = !mezclado
+
+        val contextoVivo = q.contextEntries
+        val nuevoOrden = if (mezclado) {
+            // La actual queda primera para no cortarla; el resto se mezcla.
+            listOf(actual).filter { !it.ephemeral } +
+                contextoVivo.filter { it.uid != actual.uid }.shuffled()
+        } else {
+            val vivos = contextoVivo.map { it.uid }.toSet()
+            contextoOriginal.filter { it.uid in vivos }
+        }
+
+        val nueva = q.withContextOrder(nuevoOrden)
+        aplicarOrdenSinCortar(c, nueva)
+        _queue.value = nueva
+    }
+
+    /**
+     * Reordena el timeline dejando intacta la cancion que esta sonando.
+     *
+     * Se evita `setMediaItems`, que reemplaza el timeline entero y obliga a volver a
+     * preparar la actual: eso cortaba el audio un instante y, tocando el boton varias
+     * veces seguidas, la reproduccion quedaba frenada. Quitar y agregar entradas
+     * *alrededor* de la actual no la toca, asi que el cambio es imperceptible.
+     */
+    private fun aplicarOrdenSinCortar(c: MediaController, nueva: PlayQueue) {
+        val indiceActual = c.currentMediaItemIndex
+        val total = c.mediaItemCount
+        if (indiceActual !in 0 until total) return
+
+        // Queda solo la actual, sin tocarla.
+        if (indiceActual + 1 < total) c.removeMediaItems(indiceActual + 1, total)
+        if (indiceActual > 0) c.removeMediaItems(0, indiceActual)
+
+        val destino = nueva.currentIndex.coerceAtLeast(0)
+        val antes = nueva.entries.take(destino)
+        val despues = nueva.entries.drop(destino + 1)
+
+        if (antes.isNotEmpty()) {
+            c.addMediaItems(0, antes.map { it.song.toMediaItem(it.uid) })
+        }
+        if (despues.isNotEmpty()) {
+            c.addMediaItems(despues.map { it.song.toMediaItem(it.uid) })
+        }
     }
 
     fun playNext(song: Song) = encolar { it.playNext(song, nextUid++) }
@@ -262,11 +340,6 @@ class PlayerConnection(
         val destino = (c.currentPosition + deltaMs)
             .coerceIn(0L, c.duration.coerceAtLeast(0L))
         seekTo(destino)
-    }
-
-    fun toggleShuffle() {
-        val c = controller ?: return
-        c.shuffleModeEnabled = !c.shuffleModeEnabled
     }
 
     /** Cicla apagado -> repetir todo -> repetir una, como el boton de la pantalla. */

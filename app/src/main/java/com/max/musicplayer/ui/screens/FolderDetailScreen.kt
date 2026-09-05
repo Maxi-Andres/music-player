@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -214,6 +215,10 @@ private fun CollapsedBar(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            // Scaffold no aplica el inset de la barra de estado a un topBar propio
+            // (el TopAppBar de Material lo hace solo), asi que hay que ponerlo aca:
+            // si no, la flecha queda pisando el reloj.
+            .statusBarsPadding()
             .height(56.dp)
             .padding(horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically,

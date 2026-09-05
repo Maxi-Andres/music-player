@@ -14,21 +14,18 @@ dependencies {
 kover {
     reports {
         filters {
-            excludes {
-                // La UI de Compose se cubre con tests de UI, no con cobertura de linea.
-                packages("*.ui.theme")
-                classes(
-                    "*ComposableSingletons*",
-                    "*_Factory*",
-                    "*BuildConfig",
-                    "*.databinding.*",
-                )
+            // Se mide solo la logica. La UI de Compose y el servicio de reproduccion
+            // necesitan tests instrumentados, que todavia no existen (ver docs/TESTING.md);
+            // incluirlos daria un porcentaje global sin significado.
+            includes {
+                packages("com.max.musicplayer.data")
             }
         }
         verify {
-            rule("Cobertura minima de lineas") {
+            // Usa los filtros de arriba: mide solo la logica, no la UI.
+            rule("Cobertura minima de la logica") {
                 bound {
-                    minValue = 60
+                    minValue = 85
                     coverageUnits = kotlinx.kover.gradle.plugin.dsl.CoverageUnit.LINE
                 }
             }

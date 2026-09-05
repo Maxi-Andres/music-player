@@ -149,6 +149,34 @@ data class PlayQueue(
         return copy(entries = nuevas, currentIndex = nuevoIndice)
     }
 
+    /**
+     * Reordena el contexto segun [newContextOrder], sin cortar lo que esta sonando y
+     * dejando los encolados a mano pegados detras de la actual.
+     *
+     * Es lo que usa el boton de aleatorio: en vez de delegarle un orden interno al
+     * reproductor, se reordena la lista de verdad, de modo que el orden que se ve en
+     * pantalla sea exactamente el orden en que va a sonar.
+     */
+    fun withContextOrder(newContextOrder: List<QueueEntry>): PlayQueue {
+        val actual = current
+            ?: return copy(
+                entries = newContextOrder,
+                currentIndex = if (newContextOrder.isEmpty()) -1 else 0,
+            )
+
+        val efimeros = pendingEphemeral
+        val posicion = newContextOrder.indexOfFirst { it.uid == actual.uid }
+
+        val nuevas = if (actual.ephemeral || posicion < 0) {
+            // Lo que suena es un encolado: queda arriba, con el resto de la cola detras.
+            listOf(actual) + efimeros + newContextOrder
+        } else {
+            newContextOrder.take(posicion + 1) + efimeros + newContextOrder.drop(posicion + 1)
+        }
+
+        return copy(entries = nuevas, currentIndex = nuevas.indexOfFirst { it.uid == actual.uid })
+    }
+
     /** Vacia la cola efimera pendiente sin tocar el contexto ni lo que esta sonando. */
     fun clearEphemeral(): PlayQueue {
         val actual = current

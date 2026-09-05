@@ -128,10 +128,10 @@ class MusicViewModel(app: Application) : AndroidViewModel(app) {
 
     fun play(songs: List<Song>, index: Int) = player.playContext(songs, index)
 
-    /** Reproduce la lista completa mezclada, como el boton "Aleatorio". */
+    /** Reproduce la lista mezclada arrancando por una cualquiera, como "Aleatorio". */
     fun shufflePlay(songs: List<Song>) {
         if (songs.isEmpty()) return
-        player.playContext(songs.shuffled(), 0)
+        player.playContext(songs, songs.indices.random(), shuffle = true)
     }
 
     override fun onCleared() {
