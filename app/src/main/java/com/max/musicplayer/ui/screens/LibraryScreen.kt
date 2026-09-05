@@ -252,6 +252,19 @@ private fun SongsTab(
     val letras = remember(songs) { MusicLibrary.alphabetIndex(songs.map { it.title }) }
     val etiquetas = remember(songs) { songs.map { it.title } }
 
+    // Si se toca una letra con la lista ordenada por fecha, primero hay que reordenar
+    // alfabeticamente. Como la lista nueva llega en la recomposicion siguiente, la letra
+    // queda pendiente y el salto se hace cuando el orden ya se aplico.
+    var letraPendiente by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(etiquetas, letraPendiente) {
+        val letra = letraPendiente ?: return@LaunchedEffect
+        val destino = MusicLibrary.firstIndexForLetter(etiquetas, letra)
+        if (destino >= 0) {
+            listState.scrollToItem(destino)
+            letraPendiente = null
+        }
+    }
+
     Column(modifier = Modifier.fillMaxSize()) {
         Box {
             ListHeader(
@@ -290,20 +303,23 @@ private fun SongsTab(
                 }
             }
 
-            // Solo con orden por titulo: con orden por fecha, saltar a una letra
-            // llevaria a una posicion arbitraria. La referencia tampoco la muestra aca.
-            if (songSort.isAlphabetical) {
-                AlphabetIndex(
-                    letters = letras,
-                    onLetterSelected = { letra ->
+            AlphabetIndex(
+                letters = letras,
+                onLetterSelected = { letra ->
+                    if (songSort.isAlphabetical) {
                         val destino = MusicLibrary.firstIndexForLetter(etiquetas, letra)
                         if (destino >= 0) scope.launch { listState.scrollToItem(destino) }
-                    },
-                    modifier = Modifier
-                        .align(Alignment.CenterEnd)
-                        .padding(horizontal = 4.dp),
-                )
-            }
+                    } else {
+                        // Con orden por fecha la letra no ubica nada, asi que se pasa
+                        // a orden alfabetico y recien ahi se salta.
+                        onSongSortChange(SongSort.TITLE_ASC)
+                        letraPendiente = letra
+                    }
+                },
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .padding(horizontal = 4.dp),
+            )
         }
     }
 }
@@ -323,6 +339,18 @@ private fun FoldersTab(
 
     val letras = remember(folders) { MusicLibrary.alphabetIndex(folders.map { it.name }) }
     val etiquetas = remember(folders) { folders.map { it.name } }
+
+    // Mismo criterio que en Canciones: si el orden no es alfabetico, se reordena y el
+    // salto queda pendiente hasta que la lista nueva este lista.
+    var letraPendiente by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(etiquetas, letraPendiente) {
+        val letra = letraPendiente ?: return@LaunchedEffect
+        val destino = MusicLibrary.firstIndexForLetter(etiquetas, letra)
+        if (destino >= 0) {
+            listState.scrollToItem(destino + if (showDirectories) 1 else 0)
+            letraPendiente = null
+        }
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
         Box {
@@ -359,22 +387,25 @@ private fun FoldersTab(
                 }
             }
 
-            if (folderSort.isAlphabetical) {
-                AlphabetIndex(
-                    letters = letras,
-                    onLetterSelected = { letra ->
+            AlphabetIndex(
+                letters = letras,
+                onLetterSelected = { letra ->
+                    if (folderSort.isAlphabetical) {
                         val destino = MusicLibrary.firstIndexForLetter(etiquetas, letra)
                         // La fila "Directorios" ocupa la posicion 0 cuando esta visible.
                         val corrimiento = if (showDirectories) 1 else 0
                         if (destino >= 0) {
                             scope.launch { listState.scrollToItem(destino + corrimiento) }
                         }
-                    },
-                    modifier = Modifier
-                        .align(Alignment.CenterEnd)
-                        .padding(horizontal = 4.dp),
-                )
-            }
+                    } else {
+                        onFolderSortChange(FolderSort.NAME_ASC)
+                        letraPendiente = letra
+                    }
+                },
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .padding(horizontal = 4.dp),
+            )
         }
     }
 }

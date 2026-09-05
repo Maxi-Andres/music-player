@@ -41,6 +41,33 @@ data class PlayQueue(
         get() = upNext.filter { it.ephemeral }
 
     /**
+     * Posicion absoluta donde arranca el bloque de temas encolados a mano.
+     * Van siempre juntos y justo despues de la actual, asi que alcanza con esta base
+     * para traducir posiciones de la pantalla de cola a posiciones reales.
+     */
+    val ephemeralBaseIndex: Int
+        get() = currentIndex + 1
+
+    /**
+     * El contexto: la carpeta o lista desde la que se empezo a escuchar, sin los temas
+     * encolados a mano.
+     *
+     * Es lo que la pantalla de reproduccion muestra abajo. Contexto y cola son cosas
+     * distintas: poner una cancion de una carpeta no "crea una cola", solo fija un
+     * contexto; la cola son los temas que el usuario agrega aparte.
+     */
+    val contextEntries: List<QueueEntry>
+        get() = entries.filter { !it.ephemeral }
+
+    /** Posicion de la actual dentro del contexto, o -1 si lo que suena es un encolado. */
+    val currentContextIndex: Int
+        get() {
+            val actual = current ?: return -1
+            if (actual.ephemeral) return -1
+            return contextEntries.indexOfFirst { it.uid == actual.uid }
+        }
+
+    /**
      * Inserta [song] para que suene inmediatamente despues de la actual.
      * Si se llama varias veces, la ultima queda primera (como "Reproducir a continuacion").
      */

@@ -27,6 +27,8 @@ data class PlaybackUiState(
     val shuffleEnabled: Boolean = false,
     val repeatMode: Int = Player.REPEAT_MODE_OFF,
     val isConnected: Boolean = false,
+    /** Id de sesion de audio, necesario para el ecualizador. 0 = todavia desconocido. */
+    val audioSessionId: Int = 0,
 )
 
 fun Song.toMediaItem(uid: Long): MediaItem = MediaItem.Builder()
@@ -39,7 +41,9 @@ fun Song.toMediaItem(uid: Long): MediaItem = MediaItem.Builder()
             .setTitle(title)
             .setArtist(displayArtist)
             .setAlbumTitle(album)
-            .setArtworkUri(albumArtUri.toUri())
+            // Apunta al archivo de audio: AudioArtworkBitmapLoader le saca la tapa
+            // embebida. La caratula por album mostraba la de otra cancion.
+            .setArtworkUri(contentUri.toUri())
             .build(),
     )
     .build()
@@ -94,7 +98,11 @@ class PlayerConnection(
                     addListener(listener)
                     syncFromPlayer(this)
                 }
-                _state.value = _state.value.copy(isConnected = true)
+                _state.value = _state.value.copy(
+                    isConnected = true,
+                    audioSessionId = controller?.sessionExtras
+                        ?.getInt(PlaybackService.KEY_AUDIO_SESSION_ID, 0) ?: 0,
+                )
                 startPositionUpdates()
                 accionPendiente?.invoke()
                 accionPendiente = null
@@ -182,6 +190,14 @@ class PlayerConnection(
             c.prepare()
             c.play()
         }
+    }
+
+    /** Salta directo a una entrada de la cola (tocarla en la lista o en la tira). */
+    fun playQueueIndex(index: Int) {
+        val c = controller ?: return
+        if (index !in _queue.value.entries.indices) return
+        c.seekTo(index, 0L)
+        c.play()
     }
 
     fun removeFromQueue(index: Int) {

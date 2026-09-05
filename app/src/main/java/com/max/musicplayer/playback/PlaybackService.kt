@@ -2,9 +2,12 @@ package com.max.musicplayer.playback
 
 import android.app.PendingIntent
 import android.content.Intent
+import android.os.Bundle
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
+import androidx.media3.common.util.Util
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.session.CacheBitmapLoader
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import com.max.musicplayer.MainActivity
@@ -28,6 +31,10 @@ class PlaybackService : MediaSessionService() {
     override fun onCreate() {
         super.onCreate()
 
+        // Se genera aca y se fija en el player para poder pasarselo al ecualizador:
+        // si se dejara que ExoPlayer lo asigne solo, no habria id hasta que suene algo.
+        val audioSessionId = Util.generateAudioSessionIdV21(this)
+
         val player = ExoPlayer.Builder(this)
             .setAudioAttributes(
                 AudioAttributes.Builder()
@@ -39,9 +46,13 @@ class PlaybackService : MediaSessionService() {
             // Pausa sola cuando se desenchufan los auriculares.
             .setHandleAudioBecomingNoisy(true)
             .build()
+            .apply { setAudioSessionId(audioSessionId) }
 
         mediaSession = MediaSession.Builder(this, player)
             .setSessionActivity(openAppIntent())
+            .setBitmapLoader(CacheBitmapLoader(AudioArtworkBitmapLoader(this)))
+            // La UI lo lee desde los extras de la sesion para armar el ecualizador.
+            .setExtras(Bundle().apply { putInt(KEY_AUDIO_SESSION_ID, audioSessionId) })
             .build()
     }
 
@@ -54,6 +65,10 @@ class PlaybackService : MediaSessionService() {
                 .setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
+
+    companion object {
+        const val KEY_AUDIO_SESSION_ID = "audio_session_id"
+    }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? =
         mediaSession

@@ -53,4 +53,25 @@
     <string name="cd_queue">Cola</string>
     <string name="cd_rewind_10">Atrasar 10 segundos</string>
     <string name="cd_forward_10">Adelantar 10 segundos</string>
+
+    <string name="now_playing">Reproduciendo</string>
+    <string name="equalizer">Ecualizador</string>
+
+    <string name="queue_title">Cola de reproducción</string>
+    <string name="queue_clear">Limpiar</string>
+    <string name="queue_remove">Quitar de la cola</string>
+    <string name="queue_reorder">Reordenar</string>
+    <string name="queue_empty_explained">No encolaste ninguna canción todavía.
+
+Usá el menú ⋮ de una canción para agregarla acá; suena a continuación y después la reproducción vuelve sola a la carpeta.</string>
+
+    <string name="menu_play_next">Reproducir a continuación</string>
+    <string name="menu_add_to_queue">Agregar a la cola</string>
+    <string name="menu_go_to_folder">Ir a la carpeta</string>
+
+    <string name="eq_enable">Activar ecualizador</string>
+    <string name="eq_preset">Preajuste</string>
+    <string name="eq_unavailable">Tu teléfono no deja que esta app controle el ecualizador directamente. Podés usar el del sistema.</string>
+    <string name="eq_open_system">Abrir el ecualizador del sistema</string>
+    <string name="eq_no_system">Tu teléfono tampoco tiene un ecualizador del sistema</string>
 </resources>

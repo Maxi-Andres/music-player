@@ -4,4 +4,18 @@ poner tipo release? asi entro a github y lo descargo de ahi y a la mierda
 
 cuando esta bloqueado las mineaturas estan mal, cuando scroleas que se vaya canciones carpetas y buscar? tipo toda la barra de arriba
 
+mover los 3 puntos a la izqueirda de las canciones para que no joda con la barra de letras
+
+que se puedan borrar canciones, tipo viste los audios de whatsap poronga
+
+en lacola de reproduccion hay un icono que son dos barras, supongo que es para agarrar ahi y ordenar segun queres, eso no funciona
+si toco por ejemeplo entro a acdc pongo una cancion, toco la barra de abajo para levarme a la pantalla de que cancion esta reproducionendo y despues toco la flecha para ir atras me lleva a carpetas no a acdc que es donde estaba te tiene que llevar a donde estaba
+cuando entro a la carpeta "a romper------" las letras para elegir estan sobre el boton reproducir, quiero cambiar algo dentro de las carpetas que cuando empieces a hacer scroll todo se vayya para arriba los botones la carpeta y todo eso y que quede el "header" como la nueva foto que agregue fijate la parte de arriba, esta mas colapsada asi se peuden ver mas canciones
+y que en la pantalla donde te pone la cancion que estas escuchando la barra de canciones de abajo sean las canciones de la carpeta no la cola de reproduccion, esa cola es algo que solo importa si el usuario la usa, no es que cuando entras a la carpeta y pones una cancion se crea una cola de reproduccion, es algo aparte, si entras en una carpeta y pones una cancion te tiene que poner abajo todas las canciones que tiene la carpeta, ordenadas segun la configuracion, si tenes orden alfabetico asi, si tenes randonm bueno, las canciones de las carpetas en orden random, etc, esto mismo es para canciones, en donde estan todas las canciones es lo mismo, SOLO si vos creas una cola de reproduccion te tienen que salir las canciones de la cola, pero ahora el tema es que la cola es como la unica manera de reproducir musica entonces la app arma automaticamente una cola, pero eso esta mal, son dos cosas diferentes
+
+
+
+done:
+
 en canciones tambien tiene que estar el buscador por letra
+

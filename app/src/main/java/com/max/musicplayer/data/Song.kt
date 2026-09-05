@@ -30,10 +30,6 @@ data class Song(
     val contentUri: String
         get() = "content://media/external/audio/media/$id"
 
-    /** Caratula embebida en el album. Puede no existir; la UI cae al placeholder. */
-    val albumArtUri: String
-        get() = "content://media/external/audio/albumart/$albumId"
-
     /** Artista tal como lo muestra la lista: MediaStore usa "<unknown>" cuando no hay tag. */
     val displayArtist: String
         get() = artist.takeIf { it.isNotBlank() && it != UNKNOWN_ARTIST_RAW } ?: UNKNOWN_ARTIST

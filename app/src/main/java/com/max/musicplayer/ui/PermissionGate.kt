@@ -67,8 +67,17 @@ fun PermissionGate(content: @Composable () -> Unit) {
 
     LaunchedEffect(Unit) {
         if (!tienePermiso) solicitar.launch(audioPermission)
+
+        // Solo se pide si realmente falta: pedirlo en cada arranque le tira al usuario
+        // un dialogo encima cada vez que abre la app.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            solicitarNotificaciones.launch(Manifest.permission.POST_NOTIFICATIONS)
+            val notificacionesConcedidas = ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS,
+            ) == PackageManager.PERMISSION_GRANTED
+            if (!notificacionesConcedidas) {
+                solicitarNotificaciones.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
         }
     }
 

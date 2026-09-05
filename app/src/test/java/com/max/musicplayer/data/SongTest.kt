@@ -29,11 +29,10 @@ class SongTest {
     }
 
     @Test
-    fun `los content URI se arman con el id correspondiente`() {
-        val s = song(id = 42L, albumId = 7L)
-
-        assertThat(s.contentUri).isEqualTo("content://media/external/audio/media/42")
-        assertThat(s.albumArtUri).isEqualTo("content://media/external/audio/albumart/7")
+    fun `el content URI se arma con el id de la cancion`() {
+        // La caratula NO se resuelve por album (ver ArtworkLoader): se lee del archivo.
+        assertThat(song(id = 42L).contentUri)
+            .isEqualTo("content://media/external/audio/media/42")
     }
 
     @Test

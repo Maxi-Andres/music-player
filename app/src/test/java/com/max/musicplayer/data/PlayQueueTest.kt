@@ -261,6 +261,55 @@ class PlayQueueTest {
         assertThat(q.current?.song?.title).isEqualTo("Encolada")
     }
 
+    // --- contexto vs cola: son dos cosas distintas ---
+
+    @Test
+    fun `el contexto son las canciones de la carpeta, sin lo encolado a mano`() {
+        val q = PlayQueue.fromContext(contexto, 1)
+            .playNext(extra, uid = 100)
+            .addToQueue(otraExtra, uid = 101)
+
+        assertThat(q.contextEntries.map { it.song.title })
+            .containsExactly("Tema 1", "Tema 2", "Tema 3", "Tema 4", "Tema 5").inOrder()
+    }
+
+    @Test
+    fun `poner una cancion no crea cola, si no se encola nada la cola queda vacia`() {
+        val q = PlayQueue.fromContext(contexto, 2)
+
+        assertThat(q.pendingEphemeral).isEmpty()
+        assertThat(q.contextEntries).hasSize(5)
+    }
+
+    @Test
+    fun `currentContextIndex ubica la actual dentro del contexto`() {
+        val q = PlayQueue.fromContext(contexto, 3).playNext(extra, uid = 100)
+
+        assertThat(q.currentContextIndex).isEqualTo(3)
+    }
+
+    @Test
+    fun `mientras suena un encolado, la actual no esta en el contexto`() {
+        val q = PlayQueue.fromContext(contexto, 0)
+            .playNext(extra, uid = 100)
+            .moveToIndex(1)
+
+        assertThat(q.currentContextIndex).isEqualTo(-1)
+        assertThat(q.contextEntries).hasSize(5)
+    }
+
+    @Test
+    fun `los encolados quedan juntos y arrancan justo despues de la actual`() {
+        val q = PlayQueue.fromContext(contexto, 1)
+            .addToQueue(extra, uid = 100)
+            .addToQueue(otraExtra, uid = 101)
+
+        val base = q.ephemeralBaseIndex
+        assertThat(q.entries[base].uid).isEqualTo(100L)
+        assertThat(q.entries[base + 1].uid).isEqualTo(101L)
+        assertThat(q.pendingEphemeral).hasSize(2)
+    }
+
     @Test
     fun `upNext es lo que viene despues de la actual`() {
         val q = PlayQueue.fromContext(contexto, 2)

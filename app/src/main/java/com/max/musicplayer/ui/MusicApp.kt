@@ -5,6 +5,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -13,22 +14,37 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.max.musicplayer.data.DirectoryTree
 import com.max.musicplayer.data.Song
 import com.max.musicplayer.ui.components.MiniPlayer
+import com.max.musicplayer.ui.components.SongMenuSheet
 import com.max.musicplayer.ui.screens.DirectoryScreen
+import com.max.musicplayer.ui.screens.EqualizerScreen
 import com.max.musicplayer.ui.screens.FolderDetailScreen
 import com.max.musicplayer.ui.screens.LibraryScreen
+import com.max.musicplayer.ui.screens.NowPlayingScreen
+import com.max.musicplayer.ui.screens.QueueScreen
 
 /** Pantalla actual. Navegacion por estado: el arbol es chico y asi es mas facil de seguir. */
 private sealed interface Destino {
     data object Library : Destino
     data class Folder(val path: String) : Destino
     data class Directory(val path: String) : Destino
+    data object NowPlaying : Destino
+    data object Queue : Destino
+    data object Equalizer : Destino
 }
 
 @Composable
 fun MusicApp(vm: MusicViewModel = viewModel()) {
     LaunchedEffect(Unit) { vm.start() }
 
-    var destino by remember { mutableStateOf<Destino>(Destino.Library) }
+    // Pila de navegacion: sin ella, volver desde "Reproduciendo" siempre caia en la
+    // biblioteca aunque hubieras entrado desde una carpeta.
+    val pila = remember { mutableStateListOf<Destino>(Destino.Library) }
+    val destino = pila.last()
+    var cancionDelMenu by remember { mutableStateOf<Song?>(null) }
+
+    fun navegar(nuevo: Destino) {
+        if (pila.last() != nuevo) pila.add(nuevo)
+    }
 
     // Viven aca y no dentro de LibraryScreen: esta funcion no se recompone al navegar,
     // asi que al volver de una carpeta las listas siguen donde estaban.
@@ -56,22 +72,27 @@ fun MusicApp(vm: MusicViewModel = viewModel()) {
                 song = song,
                 isPlaying = playback.isPlaying,
                 onPlayPause = { vm.player.togglePlayPause() },
-                onQueueClick = {},
-                onExpand = {},
+                onQueueClick = { navegar(Destino.Queue) },
+                onExpand = { navegar(Destino.NowPlaying) },
             )
         }
     }
 
-    BackHandler(enabled = destino != Destino.Library) {
-        destino = when (val d = destino) {
-            is Destino.Directory -> {
-                val padre = DirectoryTree.parentOf(d.path)
-                val raiz = vm.directoryRoot.value
-                if (padre != null && d.path != raiz) Destino.Directory(padre) else Destino.Library
+    fun volverAtras() {
+        val actual = pila.last()
+        // Dentro del navegador de archivos, "atras" sube un nivel antes de salir.
+        if (actual is Destino.Directory) {
+            val padre = DirectoryTree.parentOf(actual.path)
+            val raiz = vm.directoryRoot.value
+            if (padre != null && actual.path != raiz) {
+                pila[pila.lastIndex] = Destino.Directory(padre)
+                return
             }
-            else -> Destino.Library
         }
+        if (pila.size > 1) pila.removeAt(pila.lastIndex)
     }
+
+    BackHandler(enabled = pila.size > 1) { volverAtras() }
 
     when (val d = destino) {
         Destino.Library -> LibraryScreen(
@@ -90,9 +111,9 @@ fun MusicApp(vm: MusicViewModel = viewModel()) {
             onSongSortChange = vm::setSongSort,
             onFolderSortChange = vm::setFolderSort,
             onSongClick = { indice -> vm.play(visibleSongs, indice) },
-            onSongMenu = {},
-            onFolderClick = { path -> destino = Destino.Folder(path) },
-            onDirectoriesClick = { destino = Destino.Directory(vm.directoryRoot.value) },
+            onSongMenu = { cancionDelMenu = it },
+            onFolderClick = { path -> navegar(Destino.Folder(path)) },
+            onDirectoriesClick = { navegar(Destino.Directory(vm.directoryRoot.value)) },
             onShuffleAll = { vm.shufflePlay(visibleSongs) },
             onPlayAll = { vm.play(visibleSongs, 0) },
             bottomBar = bottomBar,
@@ -107,9 +128,9 @@ fun MusicApp(vm: MusicViewModel = viewModel()) {
                 songs = delFolder,
                 sort = folderSongSort,
                 onSortChange = vm::setFolderSongSort,
-                onBack = { destino = Destino.Library },
+                onBack = { volverAtras() },
                 onSongClick = { indice -> vm.play(delFolder, indice) },
-                onSongMenu = {},
+                onSongMenu = { cancionDelMenu = it },
                 onShuffle = { vm.shufflePlay(delFolder) },
                 onPlay = { vm.play(delFolder, 0) },
                 bottomBar = bottomBar,
@@ -125,20 +146,79 @@ fun MusicApp(vm: MusicViewModel = viewModel()) {
                 path = d.path,
                 subdirectories = subdirs,
                 songsHere = aqui,
-                onBack = {
-                    val padre = DirectoryTree.parentOf(d.path)
-                    val raiz = vm.directoryRoot.value
-                    destino = if (padre != null && d.path != raiz) {
-                        Destino.Directory(padre)
-                    } else {
-                        Destino.Library
-                    }
-                },
-                onDirectoryClick = { path -> destino = Destino.Directory(path) },
+                onBack = { volverAtras() },
+                onDirectoryClick = { path -> navegar(Destino.Directory(path)) },
                 onSongClick = { indice -> vm.play(aqui, indice) },
-                onSongMenu = {},
+                onSongMenu = { cancionDelMenu = it },
                 bottomBar = bottomBar,
             )
         }
+
+        Destino.NowPlaying -> {
+            val song = cancionActual
+            if (song == null) {
+                LaunchedEffect(Unit) { volverAtras() }
+            } else {
+                NowPlayingScreen(
+                    song = song,
+                    isPlaying = playback.isPlaying,
+                    positionMs = playback.positionMs,
+                    durationMs = playback.durationMs,
+                    shuffleEnabled = playback.shuffleEnabled,
+                    repeatMode = playback.repeatMode,
+                    contextEntries = queue.contextEntries,
+                    currentContextIndex = queue.currentContextIndex,
+                    queuedCount = queue.pendingEphemeral.size,
+                    onCollapse = { volverAtras() },
+                    onPlayPause = { vm.player.togglePlayPause() },
+                    onPrevious = { vm.player.previous() },
+                    onNext = { vm.player.next() },
+                    onSeek = { vm.player.seekTo(it) },
+                    onSeekBy = { vm.player.seekBy(it) },
+                    onToggleShuffle = { vm.player.toggleShuffle() },
+                    onCycleRepeat = { vm.player.cycleRepeatMode() },
+                    onOpenQueue = { navegar(Destino.Queue) },
+                    onOpenEqualizer = { navegar(Destino.Equalizer) },
+                    onContextItemClick = { entrada ->
+                        val indice = queue.entries.indexOfFirst { it.uid == entrada.uid }
+                        if (indice >= 0) vm.player.playQueueIndex(indice)
+                    },
+                )
+            }
+        }
+
+        Destino.Queue -> QueueScreen(
+            queued = queue.pendingEphemeral,
+            baseIndex = queue.ephemeralBaseIndex,
+            onClose = { volverAtras() },
+            onPlayIndex = { vm.player.playQueueIndex(it) },
+            onRemove = { vm.player.removeFromQueue(it) },
+            onMove = { desde, hasta -> vm.player.moveInQueue(desde, hasta) },
+            onClearAll = { vm.player.clearEphemeral() },
+        )
+
+        Destino.Equalizer -> EqualizerScreen(
+            audioSessionId = playback.audioSessionId,
+            onBack = { volverAtras() },
+        )
+    }
+
+    cancionDelMenu?.let { song ->
+        SongMenuSheet(
+            song = song,
+            onDismiss = { cancionDelMenu = null },
+            onPlayNext = {
+                vm.player.playNext(song)
+                cancionDelMenu = null
+            },
+            onAddToQueue = {
+                vm.player.addToQueue(song)
+                cancionDelMenu = null
+            },
+            onGoToFolder = {
+                navegar(Destino.Folder(song.folderPath))
+                cancionDelMenu = null
+            },
+        )
     }
 }
