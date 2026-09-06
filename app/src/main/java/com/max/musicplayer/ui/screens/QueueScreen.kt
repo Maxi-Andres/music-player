@@ -3,6 +3,7 @@ package com.max.musicplayer.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DragHandle
@@ -25,11 +27,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
@@ -46,6 +51,9 @@ import com.max.musicplayer.ui.components.AlbumArt
 import kotlin.math.roundToInt
 
 private val ROW_HEIGHT = 64.dp
+
+/** Cuanto scrollea por cuadro cuando arrastras contra un borde de la lista. */
+private const val AUTO_SCROLL_PX = 14f
 
 /**
  * Cola de reproduccion: solo lo que el usuario encolo a mano.
@@ -70,11 +78,51 @@ fun QueueScreen(
     onClearAll: () -> Unit,
 ) {
     val alturaFilaPx = with(LocalDensity.current) { ROW_HEIGHT.toPx() }
+    val estadoLista = rememberLazyListState()
 
-    // Se sigue por uid y no por posicion: al mover la fila su indice cambia, y guardar
-    // el indice hacia que el arrastre se perdiera apenas cruzaba una fila.
+    // El reordenamiento se calcula mientras arrastras pero se aplica **una sola vez, al
+    // soltar**. Antes se movia en cada salto, y como la lista usa el uid de clave, mover
+    // la fila la reubicaba dentro de la composicion: eso desmontaba el nodo que estaba
+    // escuchando el gesto y el arrastre se cortaba solo. De ahi que se pudiera correr
+    // una posicion por vez y nada mas.
     var uidArrastrado by remember { mutableStateOf<Long?>(null) }
+    var origen by remember { mutableIntStateOf(-1) }
     var desplazamiento by remember { mutableFloatStateOf(0f) }
+
+    /** A que posicion iria la fila si soltaras ahora. */
+    fun destinoActual(): Int =
+        if (origen < 0 || queued.isEmpty()) {
+            -1
+        } else {
+            (origen + (desplazamiento / alturaFilaPx).roundToInt())
+                .coerceIn(0, queued.lastIndex)
+        }
+
+    val destino = destinoActual()
+
+    // Con la cola mas larga que la pantalla, llevar una cancion arriba de todo o abajo
+    // de todo obliga a que la lista acompanie al dedo. Lo que se scrollea se le suma al
+    // desplazamiento: asi la fila queda quieta bajo el dedo y lo que avanza es el
+    // destino.
+    LaunchedEffect(uidArrastrado) {
+        val uid = uidArrastrado ?: return@LaunchedEffect
+        while (true) {
+            val info = estadoLista.layoutInfo
+            val fila = info.visibleItemsInfo.firstOrNull { it.key == uid } ?: break
+            val y = fila.offset + desplazamiento
+
+            val paso = when {
+                y < info.viewportStartOffset + alturaFilaPx -> -AUTO_SCROLL_PX
+                y + alturaFilaPx > info.viewportEndOffset - alturaFilaPx -> AUTO_SCROLL_PX
+                else -> 0f
+            }
+            if (paso != 0f) {
+                desplazamiento = (desplazamiento + estadoLista.scrollBy(paso))
+                    .coerceIn(-origen * alturaFilaPx, (queued.lastIndex - origen) * alturaFilaPx)
+            }
+            withFrameNanos { }
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -121,13 +169,21 @@ fun QueueScreen(
             return@Column
         }
 
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(state = estadoLista, modifier = Modifier.fillMaxSize()) {
             itemsIndexed(queued, key = { _, entrada -> entrada.uid }) { indice, entrada ->
                 val arrastrando = entrada.uid == uidArrastrado
                 QueueRow(
                     entry = entrada,
                     isDragging = arrastrando,
-                    dragOffset = if (arrastrando) desplazamiento else 0f,
+                    // La fila arrastrada sigue al dedo; las del medio se corren una
+                    // posicion y dejan a la vista el hueco donde va a caer.
+                    dragOffset = when {
+                        arrastrando -> desplazamiento
+                        destino < 0 -> 0f
+                        origen < destino && indice in (origen + 1)..destino -> -alturaFilaPx
+                        destino < origen && indice in destino until origen -> alturaFilaPx
+                        else -> 0f
+                    },
                     onClick = { onPlayIndex(baseIndex + indice) },
                     onRemove = { onRemove(baseIndex + indice) },
                     // Arrastre directo desde el asa, sin pulsacion larga: el asa esta
@@ -136,31 +192,32 @@ fun QueueScreen(
                         detectDragGestures(
                             onDragStart = {
                                 uidArrastrado = entrada.uid
+                                origen = queued.indexOfFirst { it.uid == entrada.uid }
                                 desplazamiento = 0f
                             },
                             onDragEnd = {
+                                val hasta = destinoActual()
+                                if (origen >= 0 && hasta >= 0 && hasta != origen) {
+                                    onMove(baseIndex + origen, baseIndex + hasta)
+                                }
                                 uidArrastrado = null
+                                origen = -1
                                 desplazamiento = 0f
                             },
                             onDragCancel = {
                                 uidArrastrado = null
+                                origen = -1
                                 desplazamiento = 0f
                             },
                             onDrag = { cambio, delta ->
                                 cambio.consume()
-                                desplazamiento += delta.y
-
-                                val actual = queued.indexOfFirst { it.uid == entrada.uid }
-                                if (actual < 0) return@detectDragGestures
-
-                                val saltos = (desplazamiento / alturaFilaPx).roundToInt()
-                                if (saltos == 0) return@detectDragGestures
-
-                                val destino = (actual + saltos).coerceIn(0, queued.lastIndex)
-                                if (destino == actual) return@detectDragGestures
-
-                                onMove(baseIndex + actual, baseIndex + destino)
-                                desplazamiento -= (destino - actual) * alturaFilaPx
+                                if (origen < 0) return@detectDragGestures
+                                // Se limita a los extremos: mas alla no hay adonde
+                                // caer y la fila se despegaria del dedo.
+                                desplazamiento = (desplazamiento + delta.y).coerceIn(
+                                    -origen * alturaFilaPx,
+                                    (queued.lastIndex - origen) * alturaFilaPx,
+                                )
                             },
                         )
                     },

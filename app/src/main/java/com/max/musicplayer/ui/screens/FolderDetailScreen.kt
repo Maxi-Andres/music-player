@@ -47,6 +47,7 @@ import com.max.musicplayer.ui.theme.LocalFolderColor
 import com.max.musicplayer.data.MusicLibrary
 import com.max.musicplayer.data.Song
 import com.max.musicplayer.data.SongSort
+import com.max.musicplayer.ui.components.ALPHABET_INDEX_SPACE
 import com.max.musicplayer.ui.components.AlphabetIndex
 import com.max.musicplayer.ui.components.ListHeader
 import com.max.musicplayer.ui.components.SelectionHeader
@@ -216,6 +217,9 @@ fun FolderDetailScreen(
                             seleccionActiva = true
                             alternar(song)
                         },
+                        // Mismo hueco que en la pestania de canciones: la barra de
+                        // letras de esta pantalla tapaba el final de los titulos largos.
+                        modifier = Modifier.padding(end = ALPHABET_INDEX_SPACE),
                     )
                 }
             }
@@ -241,7 +245,6 @@ fun FolderDetailScreen(
                             onSortChange(SongSort.TITLE_ASC)
                         }
                     },
-                    modifier = Modifier.padding(horizontal = 4.dp),
                 )
             }
 

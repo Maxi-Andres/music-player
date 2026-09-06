@@ -55,9 +55,12 @@ fun SongRow(
     onLongClick: (() -> Unit)? = null,
 ) {
     Row(
-        modifier = modifier
+        // El fondo de seleccion va ANTES del modifier de afuera. En la pestania de
+        // canciones ese modifier reserva a la derecha el ancho de la barra de letras,
+        // y aplicado primero el resaltado terminaba cortado justo ahi, mientras que
+        // dentro de una carpeta (que no reserva nada) llegaba hasta el borde.
+        modifier = Modifier
             .fillMaxWidth()
-            .combinedClickable(onLongClick = onLongClick, onClick = onClick)
             .then(
                 if (selected) {
                     Modifier.background(MaterialTheme.colorScheme.surfaceVariant)
@@ -65,6 +68,8 @@ fun SongRow(
                     Modifier
                 },
             )
+            .then(modifier)
+            .combinedClickable(onLongClick = onLongClick, onClick = onClick)
             .padding(start = 6.dp, end = 12.dp, top = 8.dp, bottom = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

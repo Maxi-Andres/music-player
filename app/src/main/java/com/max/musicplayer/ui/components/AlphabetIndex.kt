@@ -39,6 +39,19 @@ private val LETTER_HEIGHT = 18.dp
 private val BAR_WIDTH = 24.dp
 private val BAR_PADDING = 8.dp
 
+/** Aire entre la barra y el borde de la pantalla, y entre la barra y la lista. */
+private val BAR_SIDE_GAP = 4.dp
+
+/**
+ * Ancho que una lista tiene que reservar a su derecha para que la barra no le tape el
+ * contenido.
+ *
+ * Sale de las medidas de la barra en vez de ser un numero suelto en cada pantalla: asi
+ * las dos listas que la usan reservan lo mismo y no se desincronizan si la barra cambia
+ * de ancho.
+ */
+val ALPHABET_INDEX_SPACE = BAR_WIDTH + BAR_SIDE_GAP * 2
+
 /** Globo que muestra en grande la letra que se esta tocando. */
 private val BUBBLE_SIZE = 64.dp
 private val BUBBLE_GAP = 10.dp
@@ -96,7 +109,11 @@ fun AlphabetIndex(
         }
     }
 
-    BoxWithConstraints(modifier = modifier.wrapContentHeight()) {
+    BoxWithConstraints(
+        modifier = modifier
+            .wrapContentHeight()
+            .padding(horizontal = BAR_SIDE_GAP),
+    ) {
         // Con 27 letras a 18dp la barra mide ~500dp y en pantallas chicas no entra.
         // Se achica solo hasta lo que haya disponible en vez de cortarse.
         val alturaLetra = minOf(

@@ -10,6 +10,8 @@ se podrian mejorar los icons, por ejempl oel de aldelantar 10segs es una pija el
 
 que en ele circulito del play te ponga cuanda cancion paso y quiza que se pueda personalizar el color de eso tambien? tipo que tambien se tiña, o que se le pueda poner un fondo, o ambas, o ponerle un color, etc
 
+se puede poner el blur tipo apple liquid glass a los botones o cuando seleccionas las canciones, etc
+
 ------------------------------------------------------------done:
 
 en canciones tambien tiene que estar el buscador por letra
@@ -74,3 +76,9 @@ poner tipo release? asi entro a github y lo descargo de ahi y a la mierda para q
 que en algun lugar, por ejemplo en el engranaje te ponga si hay una version nueva asi me acuerdo de actualizarla?
 
 los 3 puntos al lado de las carpetas no hacen nada y el boton al lado del que es para ordenar tampoco hace nada
+
+medio raro quedo esta como cortado, pero solo en canciones donde estan todas, cuando seleccionas las canciones en carpetas no esta eso,
+
+el mover las canciones dentro de la cola no funciona bien no te deja hacerlo como quieras
+
+cual es la diferencia entre reproducir a continuacion y agregar a la cola?

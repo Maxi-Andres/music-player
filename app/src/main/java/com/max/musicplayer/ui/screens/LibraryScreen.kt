@@ -62,6 +62,7 @@ import com.max.musicplayer.data.MusicLibrary
 import com.max.musicplayer.data.Song
 import com.max.musicplayer.data.SongSort
 import com.max.musicplayer.ui.LibraryTab
+import com.max.musicplayer.ui.components.ALPHABET_INDEX_SPACE
 import com.max.musicplayer.ui.components.AlphabetIndex
 import com.max.musicplayer.ui.components.DirectoriesRow
 import com.max.musicplayer.ui.components.FolderRow
@@ -71,9 +72,6 @@ import com.max.musicplayer.ui.components.ScrollToTopButton
 import com.max.musicplayer.ui.components.SelectionHeader
 import com.max.musicplayer.ui.components.SongRow
 import kotlinx.coroutines.launch
-
-/** Ancho que hay que reservar a la derecha para la barra de indice superpuesta. */
-private val INDEX_BAR_SPACE = 30.dp
 
 /** Un par de puntos mas grande que el titulo por defecto de una pestania. */
 private val TAB_TEXT_SIZE = 18.sp
@@ -422,7 +420,7 @@ private fun SongsTab(
                         // Solo las filas dejan lugar a la barra de letras. Si el hueco
                         // se le pone a la lista entera, la cabecera y los botones
                         // Aleatorio/Reproducir quedan corridos a la izquierda.
-                        modifier = Modifier.padding(end = INDEX_BAR_SPACE),
+                        modifier = Modifier.padding(end = ALPHABET_INDEX_SPACE),
                     )
                 }
             }
@@ -445,9 +443,7 @@ private fun SongsTab(
                         letraPendiente = letra
                     }
                 },
-                modifier = Modifier
-                    .align(Alignment.CenterEnd)
-                    .padding(horizontal = 4.dp),
+                modifier = Modifier.align(Alignment.CenterEnd),
             )
 
             ScrollToTopButton(
@@ -528,7 +524,7 @@ private fun FoldersTab(
                 item(key = "directorios") {
                     DirectoriesRow(
                         onClick = onDirectoriesClick,
-                        modifier = Modifier.padding(end = INDEX_BAR_SPACE),
+                        modifier = Modifier.padding(end = ALPHABET_INDEX_SPACE),
                     )
                 }
             }
@@ -539,7 +535,7 @@ private fun FoldersTab(
                     songCount = carpeta.songCount,
                     onClick = { onFolderClick(carpeta.path) },
                     onMenuClick = { onFolderMenu(carpeta) },
-                    modifier = Modifier.padding(end = INDEX_BAR_SPACE),
+                    modifier = Modifier.padding(end = ALPHABET_INDEX_SPACE),
                 )
             }
         }
@@ -558,9 +554,7 @@ private fun FoldersTab(
                         letraPendiente = letra
                     }
                 },
-                modifier = Modifier
-                    .align(Alignment.CenterEnd)
-                    .padding(horizontal = 4.dp),
+                modifier = Modifier.align(Alignment.CenterEnd),
             )
 
             ScrollToTopButton(
