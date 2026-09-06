@@ -3,9 +3,11 @@ package com.max.musicplayer.playback
 import android.app.PendingIntent
 import android.content.Intent
 import android.os.Bundle
+import androidx.annotation.OptIn
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.common.util.Util
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.CacheBitmapLoader
@@ -13,6 +15,7 @@ import androidx.media3.session.CommandButton
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import androidx.media3.session.SessionCommand
+import androidx.media3.session.SessionError
 import androidx.media3.session.SessionResult
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
@@ -32,6 +35,10 @@ import com.max.musicplayer.R
  * Por eso no hay codigo de notificaciones en este proyecto: seria reimplementar
  * a mano algo que la libreria ya resuelve.
  */
+// Media3 marca como @UnstableApi buena parte de lo que usa este servicio (los slots de
+// los botones, el BitmapLoader, la configuracion de la sesion). Se declara el opt-in
+// una vez para toda la clase en vez de anotar cada linea.
+@OptIn(UnstableApi::class)
 class PlaybackService : MediaSessionService() {
 
     private var mediaSession: MediaSession? = null
@@ -147,7 +154,7 @@ class PlaybackService : MediaSessionService() {
                 }
 
                 else -> return Futures.immediateFuture(
-                    SessionResult(SessionResult.RESULT_ERROR_NOT_SUPPORTED),
+                    SessionResult(SessionError.ERROR_NOT_SUPPORTED),
                 )
             }
             return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))

@@ -67,6 +67,9 @@ fun MusicApp(
     val folderSort by vm.folderSort.collectAsStateWithLifecycle()
     val folderSongSort by vm.folderSongSort.collectAsStateWithLifecycle()
     val queue by vm.player.queue.collectAsStateWithLifecycle()
+    // Con .value la composicion no queda suscripta: hay que recolectar el flujo para
+    // que un cambio de personalizacion se vea sin tener que navegar a otra pantalla.
+    val ajustes by settingsVm.settings.collectAsStateWithLifecycle()
     val playback by vm.player.state.collectAsStateWithLifecycle()
 
     val cancionActual: Song? = queue.current?.song
@@ -185,7 +188,7 @@ fun MusicApp(
                     onCycleRepeat = { vm.player.cycleRepeatMode() },
                     onOpenQueue = { navegar(Destino.Queue) },
                     onOpenEqualizer = { navegar(Destino.Equalizer) },
-                    tintFromArtwork = settingsVm.settings.value.tintFromArtwork,
+                    tintFromArtwork = ajustes.tintFromArtwork,
                     onContextItemClick = { entrada ->
                         val indice = queue.entries.indexOfFirst { it.uid == entrada.uid }
                         if (indice >= 0) vm.player.playQueueIndex(indice)
@@ -205,7 +208,6 @@ fun MusicApp(
         )
 
         Destino.Settings -> {
-            val ajustes by settingsVm.settings.collectAsStateWithLifecycle()
             SettingsScreen(
                 settings = ajustes,
                 onBack = { volverAtras() },

@@ -3,7 +3,9 @@ package com.max.musicplayer.playback
 import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
+import androidx.annotation.OptIn
 import androidx.media3.common.util.BitmapLoader
+import androidx.media3.common.util.UnstableApi
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.ListeningExecutorService
 import com.google.common.util.concurrent.MoreExecutors
@@ -18,6 +20,7 @@ import java.util.concurrent.Executors
  * para sacarle la tapa embebida. Sin esto la notificacion volveria a la caratula por
  * album, que en archivos sin tags muestra la tapa de otra cancion.
  */
+@OptIn(UnstableApi::class)
 class AudioArtworkBitmapLoader(private val context: Context) : BitmapLoader {
 
     private val executor: ListeningExecutorService =

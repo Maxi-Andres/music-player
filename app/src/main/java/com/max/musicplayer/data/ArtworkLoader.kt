@@ -34,12 +34,22 @@ object ArtworkLoader {
         }.getOrNull()
     }
 
-    /** Respaldo para Android 8 y 9, y para archivos sin miniatura generada. */
+    /**
+     * Respaldo para Android 8 y 9, y para archivos sin miniatura generada.
+     *
+     * Se libera a mano y no con `use`: esa extension pide AutoCloseable, que
+     * MediaMetadataRetriever recien implementa en API 29. Con minSdk 26 el `use`
+     * compilaba pero explotaba en Android 8 y 9, que son justo los unicos que dependen
+     * de este camino.
+     */
     private fun loadEmbedded(context: Context, uri: Uri, targetPx: Int): Bitmap? = runCatching {
-        MediaMetadataRetriever().use { retriever ->
+        val retriever = MediaMetadataRetriever()
+        try {
             retriever.setDataSource(context, uri)
             val bytes = retriever.embeddedPicture ?: return null
             decodeDownsampled(bytes, targetPx)
+        } finally {
+            retriever.release()
         }
     }.getOrNull()
 
