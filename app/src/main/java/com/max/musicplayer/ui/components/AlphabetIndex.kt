@@ -44,13 +44,17 @@ private val BAR_SIDE_GAP = 4.dp
 
 /**
  * Ancho que una lista tiene que reservar a su derecha para que la barra no le tape el
- * contenido.
+ * contenido: lo que la barra ocupa desde el borde de la pantalla.
+ *
+ * Es el ancho de la barra mas el aire que la separa del borde. No se cuenta el aire del
+ * otro lado: el contenido llega justo hasta donde arranca la barra, sin pisarla. Con los
+ * dos aires quedaba demasiado hueco a la derecha.
  *
  * Sale de las medidas de la barra en vez de ser un numero suelto en cada pantalla: asi
  * las dos listas que la usan reservan lo mismo y no se desincronizan si la barra cambia
  * de ancho.
  */
-val ALPHABET_INDEX_SPACE = BAR_WIDTH + BAR_SIDE_GAP * 2
+val ALPHABET_INDEX_SPACE = BAR_WIDTH + BAR_SIDE_GAP
 
 /** Globo que muestra en grande la letra que se esta tocando. */
 private val BUBBLE_SIZE = 64.dp
