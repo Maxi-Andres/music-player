@@ -46,6 +46,12 @@ jobs:
       # v1.2.3 -> versionName 1.2.3 y versionCode 10203. El versionCode tiene que
       # crecer en cada version o Android rechaza la actualizacion; calcularlo del tag
       # lo hace automatico y sin numeros repetidos.
+      # gradlew se versiona sin permiso de ejecucion (se edita desde Windows, que no
+      # tiene ese bit). En el runner, que es Linux, ./gradlew cortaria con "Permission
+      # denied" y codigo 126 antes de correr nada.
+      - name: Hacer ejecutable gradlew
+        run: chmod +x gradlew
+
       - name: Calcular la version desde el tag
         id: version
         run: |

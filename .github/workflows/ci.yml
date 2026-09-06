@@ -36,6 +36,12 @@ jobs:
       - name: Preparar Gradle (con cache)
         uses: gradle/actions/setup-gradle@v4
 
+      # gradlew se versiona sin permiso de ejecucion (se edita desde Windows, que no
+      # tiene ese bit). En el runner, que es Linux, ./gradlew cortaria con "Permission
+      # denied" y codigo 126 antes de correr nada.
+      - name: Hacer ejecutable gradlew
+        run: chmod +x gradlew
+
       - name: Lint de Android
         run: ./gradlew lintDebug --stacktrace
 
@@ -90,6 +96,12 @@ jobs:
 
       - name: Preparar Gradle (con cache)
         uses: gradle/actions/setup-gradle@v4
+
+      # gradlew se versiona sin permiso de ejecucion (se edita desde Windows, que no
+      # tiene ese bit). En el runner, que es Linux, ./gradlew cortaria con "Permission
+      # denied" y codigo 126 antes de correr nada.
+      - name: Hacer ejecutable gradlew
+        run: chmod +x gradlew
 
       - name: Habilitar aceleracion KVM
         run: |
