@@ -189,6 +189,7 @@ fun PlayActionPills(
             iconTint = tinteIcono,
             onClick = onShuffleClick,
             modifier = Modifier.weight(1f),
+            glassy = !filled,
         )
         Pill(
             text = stringResource(R.string.action_play),
@@ -198,6 +199,7 @@ fun PlayActionPills(
             iconTint = tinteIcono,
             onClick = onPlayClick,
             modifier = Modifier.weight(1f),
+            glassy = !filled,
         )
     }
 }
@@ -211,13 +213,18 @@ private fun Pill(
     iconTint: Color,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    glassy: Boolean = false,
 ) {
+    val forma = RoundedCornerShape(28.dp)
     Button(
         onClick = onClick,
-        modifier = modifier,
-        shape = RoundedCornerShape(28.dp),
+        // La variante oscura se dibuja como vidrio: el color de relleno se apaga y lo
+        // pone el modifier, que ademas deja pasar el fondo. La blanca rellena queda
+        // solida, como en la referencia.
+        modifier = if (glassy) modifier.glass(forma) else modifier,
+        shape = forma,
         colors = ButtonDefaults.buttonColors(
-            containerColor = container,
+            containerColor = if (glassy) Color.Transparent else container,
             contentColor = content,
         ),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(

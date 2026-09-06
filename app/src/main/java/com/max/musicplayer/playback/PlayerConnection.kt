@@ -432,7 +432,11 @@ class PlayerConnection(
         }
     }
 
-    private companion object {
+    companion object {
+        /**
+         * Cada cuanto se informa la posicion de reproduccion. Es publico porque la UI
+         * lo necesita para animar al mismo ritmo y no a los saltos.
+         */
         const val POSITION_POLL_MS = 500L
         const val RESTART_THRESHOLD_MS = 3_000L
     }
