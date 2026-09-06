@@ -9,6 +9,10 @@
         android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
 
+    <!-- Solo para consultar en GitHub si hay una version nueva. Es un permiso
+         normal: no se le pide nada al usuario. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <!-- Notificacion del reproductor (Android 13+ la pide en runtime) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 

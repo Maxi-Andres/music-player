@@ -1,5 +1,6 @@
 package com.max.musicplayer.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -48,6 +49,7 @@ import com.max.musicplayer.data.Song
 import com.max.musicplayer.data.SongSort
 import com.max.musicplayer.ui.components.AlphabetIndex
 import com.max.musicplayer.ui.components.ListHeader
+import com.max.musicplayer.ui.components.SelectionHeader
 import com.max.musicplayer.ui.components.PlayActionPills
 import com.max.musicplayer.ui.components.ScrollToTopButton
 import com.max.musicplayer.ui.components.SongRow
@@ -73,11 +75,35 @@ fun FolderDetailScreen(
     onSongMenu: (Song) -> Unit,
     onShuffle: () -> Unit,
     onPlay: () -> Unit,
+    onPlaySelection: (List<Song>) -> Unit,
+    onQueueSelection: (List<Song>) -> Unit,
     bottomBar: @Composable () -> Unit,
 ) {
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     var menuOrden by remember { mutableStateOf(false) }
+
+    // Mismo modo seleccion que en la pestania de canciones, con su propio estado:
+    // lo que marques dentro de una carpeta no tiene por que seguir marcado afuera.
+    var seleccionActiva by remember { mutableStateOf(false) }
+    var seleccionados by remember { mutableStateOf(emptySet<Long>()) }
+
+    fun salirDeSeleccion() {
+        seleccionActiva = false
+        seleccionados = emptySet()
+    }
+
+    fun alternar(song: Song) {
+        seleccionados = if (song.id in seleccionados) {
+            seleccionados - song.id
+        } else {
+            seleccionados + song.id
+        }
+    }
+
+    BackHandler(enabled = seleccionActiva) { salirDeSeleccion() }
+
+    val marcadas = remember(songs, seleccionados) { songs.filter { it.id in seleccionados } }
 
     val letras = remember(songs) { MusicLibrary.alphabetIndex(songs.map { it.title }) }
     val etiquetas = remember(songs) { songs.map { it.title } }
@@ -123,15 +149,37 @@ fun FolderDetailScreen(
                         }
 
                         Box {
-                            ListHeader(
-                                title = pluralStringResource(
-                                    R.plurals.song_count_title,
-                                    songs.size,
-                                    songs.size,
-                                ),
-                                onSortClick = { menuOrden = true },
-                                onSelectClick = {},
-                            )
+                            if (seleccionActiva) {
+                                SelectionHeader(
+                                    selectedCount = marcadas.size,
+                                    onClose = { salirDeSeleccion() },
+                                    onSelectAll = {
+                                        seleccionados = if (marcadas.size == songs.size) {
+                                            emptySet()
+                                        } else {
+                                            songs.map { it.id }.toSet()
+                                        }
+                                    },
+                                    onPlay = {
+                                        onPlaySelection(marcadas)
+                                        salirDeSeleccion()
+                                    },
+                                    onAddToQueue = {
+                                        onQueueSelection(marcadas)
+                                        salirDeSeleccion()
+                                    },
+                                )
+                            } else {
+                                ListHeader(
+                                    title = pluralStringResource(
+                                        R.plurals.song_count_title,
+                                        songs.size,
+                                        songs.size,
+                                    ),
+                                    onSortClick = { menuOrden = true },
+                                    onSelectClick = { seleccionActiva = true },
+                                )
+                            }
                             SongSortMenu(
                                 expanded = menuOrden,
                                 current = sort,
@@ -157,9 +205,17 @@ fun FolderDetailScreen(
                     val song = songs[indice]
                     SongRow(
                         song = song,
-                        onClick = { onSongClick(indice) },
+                        onClick = {
+                            if (seleccionActiva) alternar(song) else onSongClick(indice)
+                        },
                         onMenuClick = { onSongMenu(song) },
                         showDate = false,
+                        selectionMode = seleccionActiva,
+                        selected = song.id in seleccionados,
+                        onLongClick = {
+                            seleccionActiva = true
+                            alternar(song)
+                        },
                     )
                 }
             }

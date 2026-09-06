@@ -2,16 +2,13 @@ que se puedan borrar canciones, asi podes borrar viste los audios de whatsap por
 
 que se pueda ver la cola o las canciones de la carpeta? en la lista de canciones me refiero por que si se pueden ver
 
-La función de Spotify que buscas se llama Sesión remota (o Sesión grupal), la cual está integrada dentro de la herramienta Spotify Jam. se puede implementar algo asi?? pero que una persona sola tenga la app mia, asi no hace falta descargarla, o si no bueno que tenga que estar descargado en los celus de todos los que quieran unirse
+La función de Spotify que buscas se llama Sesión remota (o Sesión grupal), la cual está integrada dentro de la herramienta Spotify Jam. se puede implementar algo asi?? pero que una persona sola tenga la app mia, asi no hace falta descargarla que la otra gente la descargue, o si no bueno que tenga que estar descargado en los celus de todos los que quieran unirse
 
 en las notificaciones esta la opcion para repetir, me parace mejor la opcion para random?
-
-los 3 puntos al lado de las carpetas no hacen nada y el boton al lado del que es para ordenar tampoco hace nada
 
 se podrian mejorar los icons, por ejempl oel de aldelantar 10segs es una pija el de la otra app esta mejor
 
 que en ele circulito del play te ponga cuanda cancion paso y quiza que se pueda personalizar el color de eso tambien? tipo que tambien se tiña, o que se le pueda poner un fondo, o ambas, o ponerle un color, etc
-
 
 ------------------------------------------------------------done:
 
@@ -73,3 +70,7 @@ el boton de quitar imagen no se ve bien por que esta en dos renglones igual esta
 y la barra para oscurecer imagen es medio incomoda por que si quiero que se vea full por ejemplo me cuesta llegar al borde del celu con lso dedos por que toca con el costado de la funda, es una boludez, no se como se podria solucionar
 
 poner tipo release? asi entro a github y lo descargo de ahi y a la mierda para que sea mas facil tipo descargarlo en otro celu o lo que sea
+
+que en algun lugar, por ejemplo en el engranaje te ponga si hay una version nueva asi me acuerdo de actualizarla?
+
+los 3 puntos al lado de las carpetas no hacen nada y el boton al lado del que es para ordenar tampoco hace nada

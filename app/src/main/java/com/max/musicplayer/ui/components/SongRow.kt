@@ -1,7 +1,8 @@
 package com.max.musicplayer.ui.components
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,6 +15,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -34,7 +36,12 @@ import com.max.musicplayer.data.Song
 /**
  * Fila de cancion, igual que en docs/reference/01-tab-canciones.jpeg:
  * caratula, titulo, "artista - album", fecha corta y menu de tres puntos.
+ *
+ * En modo seleccion el menu se reemplaza por una casilla y tocar la fila marca o
+ * desmarca en vez de reproducir. Manteniendo apretada una fila se entra al modo, que
+ * es como se hace en el resto de las apps.
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun SongRow(
     song: Song,
@@ -43,24 +50,46 @@ fun SongRow(
     modifier: Modifier = Modifier,
     isPlaying: Boolean = false,
     showDate: Boolean = true,
+    selectionMode: Boolean = false,
+    selected: Boolean = false,
+    onLongClick: (() -> Unit)? = null,
 ) {
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .combinedClickable(onLongClick = onLongClick, onClick = onClick)
+            .then(
+                if (selected) {
+                    Modifier.background(MaterialTheme.colorScheme.surfaceVariant)
+                } else {
+                    Modifier
+                },
+            )
             .padding(start = 6.dp, end = 12.dp, top = 8.dp, bottom = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         // El menu va a la izquierda: a la derecha chocaba con la barra de letras.
-        IconButton(
-            onClick = onMenuClick,
-            modifier = Modifier.size(28.dp),
-        ) {
-            Icon(
-                imageVector = Icons.Default.MoreVert,
-                contentDescription = stringResource(R.string.action_select),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        // La casilla ocupa ese mismo lugar para que la fila no se mueva al entrar
+        // y salir del modo seleccion.
+        if (selectionMode) {
+            Checkbox(
+                checked = selected,
+                // La fila entera ya alterna la seleccion; que la casilla haga lo mismo
+                // por su cuenta duplicaria el evento al tocarla justo encima.
+                onCheckedChange = null,
+                modifier = Modifier.size(28.dp),
             )
+        } else {
+            IconButton(
+                onClick = onMenuClick,
+                modifier = Modifier.size(28.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.MoreVert,
+                    contentDescription = stringResource(R.string.action_more),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
 
         AlbumArt(

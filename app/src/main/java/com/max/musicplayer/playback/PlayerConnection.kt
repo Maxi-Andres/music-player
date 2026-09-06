@@ -320,6 +320,17 @@ class PlayerConnection(
 
     fun addToQueue(song: Song) = encolar { it.addToQueue(song, nextUid++) }
 
+    /**
+     * Encola varias para que suenen a continuacion.
+     *
+     * Se recorre al reves porque cada una se inserta justo despues de la actual: yendo
+     * de adelante para atras, la ultima terminaria sonando primero.
+     */
+    fun playNext(songs: List<Song>) = songs.asReversed().forEach(::playNext)
+
+    /** Agrega varias al final de la cola efimera, respetando el orden recibido. */
+    fun addToQueue(songs: List<Song>) = songs.forEach(::addToQueue)
+
     private fun encolar(transform: (PlayQueue) -> PlayQueue) {
         val c = controller ?: return
         val antes = _queue.value

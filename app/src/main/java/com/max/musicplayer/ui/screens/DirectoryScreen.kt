@@ -39,6 +39,7 @@ fun DirectoryScreen(
     songsHere: List<Song>,
     onBack: () -> Unit,
     onDirectoryClick: (String) -> Unit,
+    onDirectoryMenu: (DirectoryNode) -> Unit,
     onSongClick: (Int) -> Unit,
     onSongMenu: (Song) -> Unit,
     bottomBar: @Composable () -> Unit,
@@ -93,7 +94,7 @@ fun DirectoryScreen(
                     name = nodo.name,
                     songCount = nodo.songCount,
                     onClick = { onDirectoryClick(nodo.path) },
-                    onMenuClick = {},
+                    onMenuClick = { onDirectoryMenu(nodo) },
                 )
             }
             items(songsHere.size, key = { songsHere[it].id }) { indice ->

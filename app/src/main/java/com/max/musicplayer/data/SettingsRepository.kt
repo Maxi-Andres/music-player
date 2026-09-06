@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
@@ -52,6 +53,14 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
 
     suspend fun setTintFromArtwork(enabled: Boolean) = edit { it[TINTE] = enabled }
 
+    /**
+     * Cuando se consulto GitHub por ultima vez, para no pegarle en cada arranque.
+     * Se guarda aparte de [AppSettings] porque no es algo que el usuario elija.
+     */
+    val lastUpdateCheckMs: Flow<Long> = store.data.map { it[ULTIMO_CHEQUEO] ?: 0L }
+
+    suspend fun setLastUpdateCheck(epochMs: Long) = edit { it[ULTIMO_CHEQUEO] = epochMs }
+
     suspend fun resetAll() = edit { it.clear() }
 
     private suspend fun edit(bloque: (MutablePreferences) -> Unit) {
@@ -67,5 +76,6 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
         val IMAGEN = stringPreferencesKey("imagen_fondo")
         val OSCURECER = floatPreferencesKey("oscurecer_fondo")
         val TINTE = booleanPreferencesKey("tinte_caratula")
+        val ULTIMO_CHEQUEO = longPreferencesKey("ultimo_chequeo_version")
     }
 }

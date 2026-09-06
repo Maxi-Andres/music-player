@@ -9,6 +9,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.material.icons.filled.Checklist
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.DoneAll
+import androidx.compose.material.icons.filled.QueueMusic
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.SwapVert
@@ -22,6 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.max.musicplayer.R
@@ -29,13 +33,16 @@ import com.max.musicplayer.R
 /**
  * Cabecera de lista: "N Canciones", el boton de ordenar y el de seleccion multiple.
  * Ver docs/reference/01-tab-canciones.jpeg.
+ *
+ * [onSelectClick] es opcional: donde no hay nada que seleccionar (la lista de carpetas)
+ * el boton no se dibuja, en vez de quedar puesto sin hacer nada.
  */
 @Composable
 fun ListHeader(
     title: String,
     onSortClick: () -> Unit,
-    onSelectClick: () -> Unit,
     modifier: Modifier = Modifier,
+    onSelectClick: (() -> Unit)? = null,
     subtitle: String? = null,
 ) {
     Row(
@@ -69,14 +76,84 @@ fun ListHeader(
                     tint = MaterialTheme.colorScheme.onBackground,
                 )
             }
-            Text("|", color = MaterialTheme.colorScheme.onSurfaceVariant)
-            IconButton(onClick = onSelectClick) {
-                Icon(
-                    imageVector = Icons.Default.Checklist,
-                    contentDescription = stringResource(R.string.action_select),
-                    tint = MaterialTheme.colorScheme.onBackground,
-                )
+            if (onSelectClick != null) {
+                Text("|", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                IconButton(onClick = onSelectClick) {
+                    Icon(
+                        imageVector = Icons.Default.Checklist,
+                        contentDescription = stringResource(R.string.action_select),
+                        tint = MaterialTheme.colorScheme.onBackground,
+                    )
+                }
             }
+        }
+    }
+}
+
+/**
+ * Cabecera que reemplaza a [ListHeader] mientras hay canciones marcadas.
+ *
+ * Ocupa el mismo lugar que la cabecera normal en vez de aparecer como una barra
+ * flotante: asi la lista no se corre para abajo al entrar al modo seleccion.
+ */
+@Composable
+fun SelectionHeader(
+    selectedCount: Int,
+    onClose: () -> Unit,
+    onSelectAll: () -> Unit,
+    onPlay: () -> Unit,
+    onAddToQueue: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val hayAlgo = selectedCount > 0
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(start = 4.dp, end = 4.dp, top = 8.dp, bottom = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        IconButton(onClick = onClose) {
+            Icon(
+                imageVector = Icons.Default.Close,
+                contentDescription = stringResource(R.string.action_cancel),
+                tint = MaterialTheme.colorScheme.onBackground,
+            )
+        }
+        Text(
+            text = pluralStringResource(R.plurals.selected_count, selectedCount, selectedCount),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier.weight(1f),
+        )
+        IconButton(onClick = onSelectAll) {
+            Icon(
+                imageVector = Icons.Default.DoneAll,
+                contentDescription = stringResource(R.string.action_select_all),
+                tint = MaterialTheme.colorScheme.onBackground,
+            )
+        }
+        // Sin nada marcado las acciones no harian nada: se apagan en vez de mentir.
+        IconButton(onClick = onPlay, enabled = hayAlgo) {
+            Icon(
+                imageVector = Icons.Default.PlayArrow,
+                contentDescription = stringResource(R.string.action_play),
+                tint = if (hayAlgo) {
+                    MaterialTheme.colorScheme.onBackground
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+            )
+        }
+        IconButton(onClick = onAddToQueue, enabled = hayAlgo) {
+            Icon(
+                imageVector = Icons.Default.QueueMusic,
+                contentDescription = stringResource(R.string.menu_add_to_queue),
+                tint = if (hayAlgo) {
+                    MaterialTheme.colorScheme.onBackground
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+            )
         }
     }
 }

@@ -13,6 +13,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.max.musicplayer.data.DirectoryTree
 import com.max.musicplayer.data.Song
+import com.max.musicplayer.ui.components.FolderMenuSheet
 import com.max.musicplayer.ui.components.MiniPlayer
 import com.max.musicplayer.ui.components.SongMenuSheet
 import com.max.musicplayer.ui.screens.DirectoryScreen
@@ -34,18 +35,31 @@ private sealed interface Destino {
     data object Settings : Destino
 }
 
+/** Carpeta o directorio cuyo menu de tres puntos esta abierto. */
+private data class CarpetaDelMenu(val nombre: String, val canciones: List<Song>)
+
 @Composable
 fun MusicApp(
     vm: MusicViewModel = viewModel(),
     settingsVm: SettingsViewModel = viewModel(),
 ) {
     LaunchedEffect(Unit) { vm.start() }
+    // Chequeo automatico: el ViewModel decide si de verdad hay que consultar o si ya
+    // se hizo hace poco.
+    LaunchedEffect(Unit) { settingsVm.checkForUpdates(force = false) }
+
+    val estadoActualizacion by settingsVm.updateState.collectAsStateWithLifecycle()
+    val hayActualizacion = estadoActualizacion is UpdateState.Available
 
     // Pila de navegacion: sin ella, volver desde "Reproduciendo" siempre caia en la
     // biblioteca aunque hubieras entrado desde una carpeta.
     val pila = remember { mutableStateListOf<Destino>(Destino.Library) }
     val destino = pila.last()
     var cancionDelMenu by remember { mutableStateOf<Song?>(null) }
+    // Se guardan las canciones ya resueltas y no la ruta: una carpeta de la pestania
+    // Carpetas son las canciones que estan justo ahi, mientras que un directorio del
+    // navegador incluye todo lo que cuelga debajo.
+    var carpetaDelMenu by remember { mutableStateOf<CarpetaDelMenu?>(null) }
 
     fun navegar(nuevo: Destino) {
         if (pila.last() != nuevo) pila.add(nuevo)
@@ -121,10 +135,19 @@ fun MusicApp(
             onSongClick = { indice -> vm.play(visibleSongs, indice) },
             onSongMenu = { cancionDelMenu = it },
             onFolderClick = { path -> navegar(Destino.Folder(path)) },
+            onFolderMenu = { carpeta ->
+                carpetaDelMenu = CarpetaDelMenu(
+                    nombre = carpeta.name,
+                    canciones = vm.songsInFolder(allSongs, carpeta.path),
+                )
+            },
             onDirectoriesClick = { navegar(Destino.Directory(vm.directoryRoot.value)) },
             onOpenSettings = { navegar(Destino.Settings) },
             onShuffleAll = { vm.shufflePlay(visibleSongs) },
             onPlayAll = { vm.play(visibleSongs, 0) },
+            onPlaySelection = { vm.play(it, 0) },
+            onQueueSelection = { vm.player.addToQueue(it) },
+            updateAvailable = hayActualizacion,
             bottomBar = bottomBar,
         )
 
@@ -142,6 +165,8 @@ fun MusicApp(
                 onSongMenu = { cancionDelMenu = it },
                 onShuffle = { vm.shufflePlay(delFolder) },
                 onPlay = { vm.play(delFolder, 0) },
+                onPlaySelection = { vm.play(it, 0) },
+                onQueueSelection = { vm.player.addToQueue(it) },
                 bottomBar = bottomBar,
             )
         }
@@ -157,6 +182,12 @@ fun MusicApp(
                 songsHere = aqui,
                 onBack = { volverAtras() },
                 onDirectoryClick = { path -> navegar(Destino.Directory(path)) },
+                onDirectoryMenu = { nodo ->
+                    carpetaDelMenu = CarpetaDelMenu(
+                        nombre = nodo.name,
+                        canciones = vm.songsUnder(allSongs, nodo.path),
+                    )
+                },
                 onSongClick = { indice -> vm.play(aqui, indice) },
                 onSongMenu = { cancionDelMenu = it },
                 bottomBar = bottomBar,
@@ -210,6 +241,9 @@ fun MusicApp(
         Destino.Settings -> {
             SettingsScreen(
                 settings = ajustes,
+                installedVersion = settingsVm.installedVersion,
+                updateState = estadoActualizacion,
+                onCheckUpdates = { settingsVm.checkForUpdates(force = true) },
                 onBack = { volverAtras() },
                 onAccentColor = settingsVm::setAccentColor,
                 onBackgroundColor = settingsVm::setBackgroundColor,
@@ -224,6 +258,30 @@ fun MusicApp(
         Destino.Equalizer -> EqualizerScreen(
             audioSessionId = playback.audioSessionId,
             onBack = { volverAtras() },
+        )
+    }
+
+    carpetaDelMenu?.let { carpeta ->
+        FolderMenuSheet(
+            name = carpeta.nombre,
+            songCount = carpeta.canciones.size,
+            onDismiss = { carpetaDelMenu = null },
+            onPlay = {
+                vm.play(carpeta.canciones, 0)
+                carpetaDelMenu = null
+            },
+            onShuffle = {
+                vm.shufflePlay(carpeta.canciones)
+                carpetaDelMenu = null
+            },
+            onPlayNext = {
+                vm.player.playNext(carpeta.canciones)
+                carpetaDelMenu = null
+            },
+            onAddToQueue = {
+                vm.player.addToQueue(carpeta.canciones)
+                carpetaDelMenu = null
+            },
         )
     }
 

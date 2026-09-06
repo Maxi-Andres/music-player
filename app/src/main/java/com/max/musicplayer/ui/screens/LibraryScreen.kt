@@ -1,5 +1,6 @@
 package com.max.musicplayer.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -20,6 +21,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.draw.clip
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -62,6 +68,7 @@ import com.max.musicplayer.ui.components.FolderRow
 import com.max.musicplayer.ui.components.ListHeader
 import com.max.musicplayer.ui.components.PlayActionPills
 import com.max.musicplayer.ui.components.ScrollToTopButton
+import com.max.musicplayer.ui.components.SelectionHeader
 import com.max.musicplayer.ui.components.SongRow
 import kotlinx.coroutines.launch
 
@@ -108,10 +115,17 @@ fun LibraryScreen(
     onSongClick: (Int) -> Unit,
     onSongMenu: (Song) -> Unit,
     onFolderClick: (String) -> Unit,
+    onFolderMenu: (MusicFolder) -> Unit,
     onDirectoriesClick: () -> Unit,
     onOpenSettings: () -> Unit,
     onShuffleAll: () -> Unit,
     onPlayAll: () -> Unit,
+    /** Reproduce las canciones marcadas en modo seleccion. */
+    onPlaySelection: (List<Song>) -> Unit,
+    /** Encola las canciones marcadas en modo seleccion. */
+    onQueueSelection: (List<Song>) -> Unit,
+    /** Hay una version nueva en GitHub: se marca el engranaje con un punto. */
+    updateAvailable: Boolean,
     bottomBar: @Composable () -> Unit,
 ) {
     var buscando by remember { mutableStateOf(false) }
@@ -177,11 +191,25 @@ fun LibraryScreen(
                         )
                     }
                     IconButton(onClick = onOpenSettings) {
-                        Icon(
-                            imageVector = Icons.Default.Settings,
-                            contentDescription = stringResource(R.string.action_settings),
-                            tint = MaterialTheme.colorScheme.onBackground,
-                        )
+                        Box {
+                            Icon(
+                                imageVector = Icons.Default.Settings,
+                                contentDescription = stringResource(R.string.action_settings),
+                                tint = MaterialTheme.colorScheme.onBackground,
+                            )
+                            // Punto de aviso: la unica pista de que hay algo para
+                            // actualizar sin tener que entrar a mirar.
+                            if (updateAvailable) {
+                                Box(
+                                    modifier = Modifier
+                                        .align(Alignment.TopEnd)
+                                        .offset(x = 2.dp, y = (-2).dp)
+                                        .size(8.dp)
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.primary),
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -232,6 +260,7 @@ fun LibraryScreen(
                         listState = foldersListState,
                         onFolderSortChange = onFolderSortChange,
                         onFolderClick = onFolderClick,
+                        onFolderMenu = onFolderMenu,
                         onDirectoriesClick = onDirectoriesClick,
                     )
 
@@ -246,6 +275,8 @@ fun LibraryScreen(
                         onSongMenu = onSongMenu,
                         onShuffleAll = onShuffleAll,
                         onPlayAll = onPlayAll,
+                        onPlaySelection = onPlaySelection,
+                        onQueueSelection = onQueueSelection,
                     )
                 }
             }
@@ -265,9 +296,34 @@ private fun SongsTab(
     onSongMenu: (Song) -> Unit,
     onShuffleAll: () -> Unit,
     onPlayAll: () -> Unit,
+    onPlaySelection: (List<Song>) -> Unit,
+    onQueueSelection: (List<Song>) -> Unit,
 ) {
     var menuOrden by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+
+    // Se guardan ids y no posiciones: reordenar la lista o buscar no tiene por que
+    // perder lo que ya estaba marcado.
+    var seleccionActiva by remember { mutableStateOf(false) }
+    var seleccionados by remember { mutableStateOf(emptySet<Long>()) }
+
+    fun salirDeSeleccion() {
+        seleccionActiva = false
+        seleccionados = emptySet()
+    }
+
+    fun alternar(song: Song) {
+        seleccionados = if (song.id in seleccionados) {
+            seleccionados - song.id
+        } else {
+            seleccionados + song.id
+        }
+    }
+
+    // Atras cierra la seleccion antes que la pantalla, que es lo que uno espera.
+    BackHandler(enabled = seleccionActiva) { salirDeSeleccion() }
+
+    val marcadas = remember(songs, seleccionados) { songs.filter { it.id in seleccionados } }
 
     val letras = remember(songs) { MusicLibrary.alphabetIndex(songs.map { it.title }) }
     val etiquetas = remember(songs) { songs.map { it.title } }
@@ -296,16 +352,42 @@ private fun SongsTab(
             item(key = "header") {
                 Column {
                     Box {
-                        ListHeader(
-                            title = pluralStringResource(
-                                R.plurals.song_count_title,
-                                totalSongs,
-                                totalSongs,
-                            ),
-                            subtitle = if (isScanning) stringResource(R.string.scanning) else null,
-                            onSortClick = { menuOrden = true },
-                            onSelectClick = {},
-                        )
+                        if (seleccionActiva) {
+                            SelectionHeader(
+                                selectedCount = marcadas.size,
+                                onClose = { salirDeSeleccion() },
+                                onSelectAll = {
+                                    seleccionados = if (marcadas.size == songs.size) {
+                                        emptySet()
+                                    } else {
+                                        songs.map { it.id }.toSet()
+                                    }
+                                },
+                                onPlay = {
+                                    onPlaySelection(marcadas)
+                                    salirDeSeleccion()
+                                },
+                                onAddToQueue = {
+                                    onQueueSelection(marcadas)
+                                    salirDeSeleccion()
+                                },
+                            )
+                        } else {
+                            ListHeader(
+                                title = pluralStringResource(
+                                    R.plurals.song_count_title,
+                                    totalSongs,
+                                    totalSongs,
+                                ),
+                                subtitle = if (isScanning) {
+                                    stringResource(R.string.scanning)
+                                } else {
+                                    null
+                                },
+                                onSortClick = { menuOrden = true },
+                                onSelectClick = { seleccionActiva = true },
+                            )
+                        }
                         SongSortMenu(
                             expanded = menuOrden,
                             current = songSort,
@@ -327,8 +409,16 @@ private fun SongsTab(
                     val song = songs[indice]
                     SongRow(
                         song = song,
-                        onClick = { onSongClick(indice) },
+                        onClick = {
+                            if (seleccionActiva) alternar(song) else onSongClick(indice)
+                        },
                         onMenuClick = { onSongMenu(song) },
+                        selectionMode = seleccionActiva,
+                        selected = song.id in seleccionados,
+                        onLongClick = {
+                            seleccionActiva = true
+                            alternar(song)
+                        },
                         // Solo las filas dejan lugar a la barra de letras. Si el hueco
                         // se le pone a la lista entera, la cabecera y los botones
                         // Aleatorio/Reproducir quedan corridos a la izquierda.
@@ -378,6 +468,7 @@ private fun FoldersTab(
     listState: LazyListState,
     onFolderSortChange: (FolderSort) -> Unit,
     onFolderClick: (String) -> Unit,
+    onFolderMenu: (MusicFolder) -> Unit,
     onDirectoriesClick: () -> Unit,
 ) {
     var menuOrden by remember { mutableStateOf(false) }
@@ -418,7 +509,6 @@ private fun FoldersTab(
                             folders.size,
                         ),
                         onSortClick = { menuOrden = true },
-                        onSelectClick = {},
                     )
                     FolderSortMenu(
                         expanded = menuOrden,
@@ -448,7 +538,7 @@ private fun FoldersTab(
                     name = carpeta.name,
                     songCount = carpeta.songCount,
                     onClick = { onFolderClick(carpeta.path) },
-                    onMenuClick = {},
+                    onMenuClick = { onFolderMenu(carpeta) },
                     modifier = Modifier.padding(end = INDEX_BAR_SPACE),
                 )
             }

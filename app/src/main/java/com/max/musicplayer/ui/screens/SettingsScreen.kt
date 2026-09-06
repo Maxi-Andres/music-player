@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
@@ -32,15 +34,18 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.max.musicplayer.R
 import com.max.musicplayer.data.AppSettings
+import com.max.musicplayer.ui.UpdateState
 import kotlin.math.roundToInt
 
 /**
@@ -58,6 +63,9 @@ fun SettingsScreen(
     onBackgroundDim: (Float) -> Unit,
     onTintFromArtwork: (Boolean) -> Unit,
     onReset: () -> Unit,
+    installedVersion: String,
+    updateState: UpdateState,
+    onCheckUpdates: () -> Unit,
 ) {
     val elegirImagen = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument(),
@@ -166,13 +174,99 @@ fun SettingsScreen(
             onSelect = onFolderColor,
         )
 
+        Seccion(stringResource(R.string.settings_updates))
+        Actualizaciones(
+            installedVersion = installedVersion,
+            estado = updateState,
+            onCheck = onCheckUpdates,
+        )
+
         OutlinedButton(
             onClick = onReset,
             modifier = Modifier.padding(16.dp),
         ) {
             Text(stringResource(R.string.settings_reset))
         }
+
+        // La pantalla scrollea: sin esto el ultimo boton queda pegado al borde.
+        Spacer(modifier = Modifier.height(24.dp))
     }
+}
+
+/**
+ * Version instalada y busqueda de una version nueva en GitHub.
+ *
+ * La app no se actualiza sola porque se instala por fuera de Play: lo unico que se
+ * puede hacer es avisar y abrir la pagina de la release. Ver docs/publicar.md.
+ */
+@Composable
+private fun Actualizaciones(
+    installedVersion: String,
+    estado: UpdateState,
+    onCheck: () -> Unit,
+) {
+    val context = LocalContext.current
+
+    Text(
+        text = stringResource(R.string.settings_version, installedVersion),
+        style = MaterialTheme.typography.bodyLarge,
+        color = MaterialTheme.colorScheme.onBackground,
+        modifier = Modifier.padding(horizontal = 16.dp),
+    )
+
+    when (estado) {
+        UpdateState.Idle -> Unit
+
+        UpdateState.Checking -> Mensaje(stringResource(R.string.settings_checking))
+
+        UpdateState.UpToDate -> Mensaje(stringResource(R.string.settings_up_to_date))
+
+        UpdateState.Failed -> Mensaje(stringResource(R.string.settings_update_failed))
+
+        is UpdateState.Available -> {
+            Text(
+                text = stringResource(
+                    R.string.settings_update_available,
+                    estado.release.version,
+                ),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(start = 16.dp, top = 4.dp),
+            )
+            Button(
+                onClick = {
+                    val intent = android.content.Intent(
+                        android.content.Intent.ACTION_VIEW,
+                        android.net.Uri.parse(estado.release.pageUrl),
+                    )
+                    // El navegador arranca fuera de la pila de la app.
+                    intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                    runCatching { context.startActivity(intent) }
+                },
+                modifier = Modifier.padding(start = 16.dp, top = 8.dp),
+            ) {
+                Text(stringResource(R.string.settings_download))
+            }
+        }
+    }
+
+    TextButton(
+        onClick = onCheck,
+        enabled = estado != UpdateState.Checking,
+        modifier = Modifier.padding(start = 8.dp),
+    ) {
+        Text(stringResource(R.string.settings_check_updates))
+    }
+}
+
+@Composable
+private fun Mensaje(texto: String) {
+    Text(
+        text = texto,
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(start = 16.dp, top = 4.dp),
+    )
 }
 
 /**

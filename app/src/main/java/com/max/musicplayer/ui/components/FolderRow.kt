@@ -49,7 +49,7 @@ fun FolderRow(
         IconButton(onClick = onMenuClick, modifier = Modifier.size(28.dp)) {
             Icon(
                 imageVector = Icons.Default.MoreVert,
-                contentDescription = stringResource(R.string.action_select),
+                contentDescription = stringResource(R.string.action_more),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
