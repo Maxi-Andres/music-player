@@ -6,6 +6,7 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -35,6 +37,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
@@ -42,21 +45,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.max.musicplayer.R
 import com.max.musicplayer.data.QueueEntry
 import com.max.musicplayer.ui.components.AlbumArt
+import kotlin.math.roundToInt
 import kotlin.math.floor
 
 private val ROW_HEIGHT = 64.dp
-
-/** Etiqueta de la zona que captura el arrastre, para poder apuntarle desde los tests. */
-const val QUEUE_DRAG_TAG = "cola-asa"
 
 /**
  * Ancho de la zona que captura el arrastre, medido desde el borde derecho: cubre el asa
@@ -106,8 +107,18 @@ fun QueueScreen(
     // partida doble: la fila trasladada informa diferencias que tienden a cero (Compose
     // da la posicion relativa al nodo ya movido) y el auto-scroll las contaba dos veces.
     // Como todas las filas miden lo mismo, alcanza con aritmetica sobre el layout.
+    // `detectDragGestures` se queda con los callbacks del momento en que arranco el
+    // gesto, y la cola llega del reproductor como una **lista nueva** en cada cambio. Sin
+    // esto, despues del primer movimiento el gesto seguia calculando posiciones sobre el
+    // orden viejo: mover dos veces la misma fila daba cualquier cosa.
+    val colaActual by rememberUpdatedState(queued)
+    val baseActual by rememberUpdatedState(baseIndex)
+    val moverActual by rememberUpdatedState(onMove)
+
     var uidArrastrado by remember { mutableStateOf<Long?>(null) }
     var indiceOrigen by remember { mutableIntStateOf(-1) }
+    // Posicion que hay que dejar a la vista despues de soltar.
+    var mostrarFila by remember { mutableIntStateOf(-1) }
     // Donde dentro de la fila la agarraste. Sin esto la fila salta para centrarse en el
     // dedo apenas empieza el gesto.
     var agarreEnFila by remember { mutableFloatStateOf(0f) }
@@ -130,23 +141,39 @@ fun QueueScreen(
      * los callbacks del momento en que empezo el gesto; un `val` le llegaria congelado.
      */
     fun destinoActual(): Int {
-        if (indiceOrigen < 0 || queued.isEmpty()) return -1
+        if (indiceOrigen < 0 || colaActual.isEmpty()) return -1
         val primera = estadoLista.layoutInfo.visibleItemsInfo.firstOrNull()
             ?: return indiceOrigen
         val centro = topeArrastrado() + alturaFilaPx / 2f
         val ranura = primera.index + floor((centro - primera.offset) / alturaFilaPx).toInt()
-        return ranura.coerceIn(0, queued.lastIndex)
+        return ranura.coerceIn(0, colaActual.lastIndex)
     }
 
     val destino = destinoActual()
 
-    /** Cuanto correr cada fila para dibujar el arrastre. */
-    fun corrimientoDe(indice: Int, esLaArrastrada: Boolean): Float = when {
-        esLaArrastrada -> topeArrastrado() - offsetDe(indice)
+    /**
+     * Cuanto correr una fila que NO es la que se arrastra, para dejar a la vista el hueco
+     * donde va a caer.
+     */
+    fun corrimientoDe(indice: Int): Float = when {
         destino < 0 || indiceOrigen < 0 -> 0f
         indiceOrigen < destino && indice in (indiceOrigen + 1)..destino -> -alturaFilaPx
         destino < indiceOrigen && indice in destino until indiceOrigen -> alturaFilaPx
         else -> 0f
+    }
+
+    // Al soltar, la fila tiene que quedar a la vista. Sin esto, mandarla arriba de todo
+    // dejaba la lista un renglon corrida y habia que scrollear para verla.
+    LaunchedEffect(mostrarFila) {
+        val objetivo = mostrarFila
+        if (objetivo < 0) return@LaunchedEffect
+        val info = estadoLista.layoutInfo
+        val fila = info.visibleItemsInfo.firstOrNull { it.index == objetivo }
+        val entera = fila != null &&
+            fila.offset >= info.viewportStartOffset &&
+            fila.offset + fila.size <= info.viewportEndOffset
+        if (!entera) estadoLista.animateScrollToItem(objetivo)
+        mostrarFila = -1
     }
 
     // Con la cola mas larga que la pantalla, la lista acompania al dedo. La zona sensible
@@ -216,77 +243,96 @@ fun QueueScreen(
             return@Column
         }
 
-        LazyColumn(state = estadoLista, modifier = Modifier.fillMaxSize()) {
-            itemsIndexed(queued, key = { _, entrada -> entrada.uid }) { indice, entrada ->
-                val arrastrando = entrada.uid == uidArrastrado
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(ROW_HEIGHT)
-                        // La fila que se arrastra se dibuja por encima de las demas.
-                        .zIndex(if (arrastrando) 1f else 0f),
-                ) {
-                    QueueRow(
-                        entry = entrada,
-                        isDragging = arrastrando,
-                        dragOffset = corrimientoDe(indice, arrastrando),
-                        onClick = { onPlayIndex(baseIndex + indice) },
-                        onRemove = { onRemove(baseIndex + indice) },
-                    )
-
-                    // Zona invisible que escucha el arrastre, encima del asa.
-                    //
-                    // Vive aca afuera y NO adentro de la fila a proposito: la fila se
-                    // mueve con `translationY`, y un nodo que se mueve junto con el dedo
-                    // informa posiciones que casi no cambian. Esta se queda donde el
-                    // layout puso a la fila. Una vez que el gesto empezo aca, Compose le
-                    // sigue mandando ese dedo aunque se vaya lejos.
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.CenterEnd)
-                            .width(DRAG_ZONE_WIDTH)
-                            .fillMaxHeight()
-                            .testTag(QUEUE_DRAG_TAG)
-                            .pointerInput(entrada.uid) {
-                                // La posicion local es relativa a esta zona, que ocupa el
-                                // alto de la fila; sumarle el offset de la fila la lleva a
-                                // coordenadas de la lista, que es donde se compara todo.
-                                fun yEnLista(local: Float): Float {
-                                    val posicion = queued.indexOfFirst { it.uid == entrada.uid }
-                                    return offsetDe(posicion) + local
-                                }
-
-                                detectDragGestures(
-                                    onDragStart = { toque ->
-                                        indiceOrigen = queued.indexOfFirst {
-                                            it.uid == entrada.uid
-                                        }
-                                        agarreEnFila = toque.y
-                                        yDelDedo = yEnLista(toque.y)
-                                        uidArrastrado = entrada.uid
-                                    },
-                                    onDragEnd = {
-                                        val hasta = destinoActual()
-                                        if (indiceOrigen >= 0 && hasta >= 0 && hasta != indiceOrigen) {
-                                            onMove(baseIndex + indiceOrigen, baseIndex + hasta)
-                                        }
-                                        uidArrastrado = null
-                                        indiceOrigen = -1
-                                    },
-                                    onDragCancel = {
-                                        uidArrastrado = null
-                                        indiceOrigen = -1
-                                    },
-                                    onDrag = { cambio, _ ->
-                                        cambio.consume()
-                                        yDelDedo = yEnLista(cambio.position.y)
-                                    },
-                                )
-                            },
-                    )
+        Box(modifier = Modifier.fillMaxSize()) {
+            LazyColumn(state = estadoLista, modifier = Modifier.fillMaxSize()) {
+                itemsIndexed(queued, key = { _, entrada -> entrada.uid }) { indice, entrada ->
+                    if (entrada.uid == uidArrastrado) {
+                        // Su lugar queda vacio: la fila se dibuja flotando mas abajo.
+                        Spacer(modifier = Modifier.fillMaxWidth().height(ROW_HEIGHT))
+                    } else {
+                        QueueRow(
+                            entry = entrada,
+                            isDragging = false,
+                            dragOffset = corrimientoDe(indice),
+                            onClick = { onPlayIndex(baseActual + indice) },
+                            onRemove = { onRemove(baseActual + indice) },
+                        )
+                    }
                 }
             }
+
+            // La fila que se esta arrastrando, dibujada aparte y encima de la lista.
+            //
+            // No puede ir dentro del LazyColumn: al arrastrarla lejos su posicion se sale
+            // de la pantalla, la lista deja de componer ese lugar y la fila desaparecia a
+            // mitad del gesto (volvia a aparecer recien al soltar). Aca no depende de que
+            // la lista la tenga a la vista.
+            val enArrastre = colaActual.firstOrNull { it.uid == uidArrastrado }
+            if (enArrastre != null) {
+                QueueRow(
+                    entry = enArrastre,
+                    isDragging = true,
+                    dragOffset = 0f,
+                    onClick = {},
+                    onRemove = {},
+                    modifier = Modifier.offset {
+                        IntOffset(0, topeArrastrado().roundToInt())
+                    },
+                )
+            }
+
+            // Franja invisible sobre las asas que escucha el arrastre.
+            //
+            // Vive **afuera** de la lista, no dentro de cada fila. Dos razones, las dos
+            // aprendidas rompiendo esto:
+            //
+            //  - Adentro de la fila, el nodo se mueve con `translationY` y Compose informa
+            //    la posicion relativa al nodo ya movido: la distancia medida tiende a cero.
+            //  - Y al arrastrar lejos, la ranura original se iba de la pantalla, LazyColumn
+            //    reciclaba la fila y con ella el nodo del gesto: el arrastre se cortaba solo
+            //    y la fila volvia a su lugar.
+            //
+            // Aca la franja no se mueve ni se recicla nunca, y sus coordenadas coinciden
+            // con las del viewport de la lista, que es contra lo que se compara todo.
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .width(DRAG_ZONE_WIDTH)
+                    .fillMaxHeight()
+                    .pointerInput(Unit) {
+                        detectDragGestures(
+                            onDragStart = { toque ->
+                                val fila = estadoLista.layoutInfo.visibleItemsInfo
+                                    .firstOrNull {
+                                        toque.y >= it.offset && toque.y < it.offset + it.size
+                                    }
+                                if (fila != null) {
+                                    indiceOrigen = fila.index
+                                    agarreEnFila = toque.y - fila.offset
+                                    yDelDedo = toque.y
+                                    uidArrastrado = fila.key as? Long
+                                }
+                            },
+                            onDragEnd = {
+                                val hasta = destinoActual()
+                                if (indiceOrigen >= 0 && hasta >= 0 && hasta != indiceOrigen) {
+                                    moverActual(baseActual + indiceOrigen, baseActual + hasta)
+                                    mostrarFila = hasta
+                                }
+                                uidArrastrado = null
+                                indiceOrigen = -1
+                            },
+                            onDragCancel = {
+                                uidArrastrado = null
+                                indiceOrigen = -1
+                            },
+                            onDrag = { cambio, _ ->
+                                cambio.consume()
+                                if (indiceOrigen >= 0) yDelDedo = cambio.position.y
+                            },
+                        )
+                    },
+            )
         }
     }
 }
@@ -298,9 +344,10 @@ private fun QueueRow(
     dragOffset: Float,
     onClick: () -> Unit,
     onRemove: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .height(ROW_HEIGHT)
             .graphicsLayer {
