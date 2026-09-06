@@ -177,6 +177,26 @@ data class PlayQueue(
         return copy(entries = nuevas, currentIndex = nuevas.indexOfFirst { it.uid == actual.uid })
     }
 
+    /**
+     * Cambia el contexto (poner una cancion de otra carpeta, o de la lista completa)
+     * **conservando lo que habias encolado a mano**.
+     *
+     * Encolar es una decision aparte de que estas escuchando: si tocar una cancion
+     * borrara la cola, perderias sin aviso lo que veniste juntando. Las encoladas
+     * pendientes se reinsertan justo despues de la que arranca, que es donde estaban
+     * respecto de lo que sonaba.
+     *
+     * [newOrder] es el contexto nuevo ya ordenado (mezclado o no) y [startIndex] la
+     * posicion dentro de el por la que se empieza.
+     */
+    fun replacingContext(newOrder: List<QueueEntry>, startIndex: Int): PlayQueue {
+        if (newOrder.isEmpty()) return PlayQueue()
+        val desde = startIndex.coerceIn(0, newOrder.lastIndex)
+        val encoladas = pendingEphemeral
+        val nuevas = newOrder.toMutableList().apply { addAll(desde + 1, encoladas) }
+        return PlayQueue(entries = nuevas, currentIndex = desde)
+    }
+
     /** Vacia la cola efimera pendiente sin tocar el contexto ni lo que esta sonando. */
     fun clearEphemeral(): PlayQueue {
         val actual = current

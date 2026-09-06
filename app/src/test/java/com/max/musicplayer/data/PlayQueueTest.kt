@@ -14,6 +14,69 @@ class PlayQueueTest {
     // --- construccion ---
 
     @Test
+    fun `cambiar de contexto conserva lo encolado a mano`() {
+        // Escuchando el contexto, con dos temas encolados a mano...
+        val q = PlayQueue.fromContext(contexto, startIndex = 0)
+            .addToQueue(extra, uid = 100)
+            .addToQueue(otraExtra, uid = 101)
+
+        // ...y toco una cancion de otra carpeta.
+        val otroContexto = (10..12).map { song(id = it.toLong(), title = "Otra $it") }
+        val entradas = otroContexto.mapIndexed { i, s -> QueueEntry(200L + i, s) }
+        val nueva = q.replacingContext(entradas, startIndex = 1)
+
+        // La elegida es la que suena y las encoladas siguen ahi, justo despues.
+        assertThat(nueva.current?.song?.title).isEqualTo("Otra 11")
+        assertThat(nueva.titulos())
+            .containsExactly("Otra 10", "Otra 11", "Encolada", "Encolada 2", "Otra 12")
+            .inOrder()
+        assertThat(nueva.pendingEphemeral.map { it.song.title })
+            .containsExactly("Encolada", "Encolada 2")
+            .inOrder()
+    }
+
+    @Test
+    fun `cambiar de contexto sin nada encolado deja solo el contexto nuevo`() {
+        val q = PlayQueue.fromContext(contexto, startIndex = 3)
+        val entradas = (10..11).map { QueueEntry(it.toLong(), song(id = it.toLong(), title = "Otra $it")) }
+
+        val nueva = q.replacingContext(entradas, startIndex = 0)
+
+        assertThat(nueva.titulos()).containsExactly("Otra 10", "Otra 11").inOrder()
+        assertThat(nueva.currentIndex).isEqualTo(0)
+    }
+
+    @Test
+    fun `las encoladas que ya sonaron no vuelven al cambiar de contexto`() {
+        // Se encola algo y despues se avanza mas alla: esa entrada ya se consumio.
+        val q = PlayQueue.fromContext(contexto, startIndex = 0)
+            .addToQueue(extra, uid = 100)
+            .moveToIndex(1) // suena la encolada
+            .moveToIndex(2) // se pasa de largo, la efimera se descarta
+
+        val entradas = listOf(QueueEntry(200L, song(id = 20, title = "Otra")))
+        val nueva = q.replacingContext(entradas, startIndex = 0)
+
+        assertThat(nueva.titulos()).containsExactly("Otra")
+    }
+
+    @Test
+    fun `cambiar a un contexto vacio deja la cola vacia`() {
+        val q = PlayQueue.fromContext(contexto, startIndex = 0).addToQueue(extra, uid = 100)
+
+        assertThat(q.replacingContext(emptyList(), startIndex = 0).isEmpty).isTrue()
+    }
+
+    @Test
+    fun `un indice fuera de rango se acomoda al contexto nuevo`() {
+        val q = PlayQueue.fromContext(contexto, startIndex = 0)
+        val entradas = (10..11).map { QueueEntry(it.toLong(), song(id = it.toLong())) }
+
+        assertThat(q.replacingContext(entradas, startIndex = 9).currentIndex).isEqualTo(1)
+        assertThat(q.replacingContext(entradas, startIndex = -3).currentIndex).isEqualTo(0)
+    }
+
+    @Test
     fun `fromContext arranca en la posicion pedida y nada es efimero`() {
         val q = PlayQueue.fromContext(contexto, startIndex = 2)
 

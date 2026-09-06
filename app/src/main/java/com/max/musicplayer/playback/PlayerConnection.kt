@@ -249,9 +249,14 @@ class PlayerConnection(
         }
         val indice = orden.indexOfFirst { it.uid == elegida.uid }
 
-        val nueva = PlayQueue(orden, indice)
+        // Lo encolado a mano sobrevive al cambio de contexto: ver replacingContext.
+        val nueva = _queue.value.replacingContext(orden, indice)
         _queue.value = nueva
-        c.setMediaItems(nueva.entries.map { it.song.toMediaItem(it.uid, it.ephemeral) }, indice, 0L)
+        c.setMediaItems(
+            nueva.entries.map { it.song.toMediaItem(it.uid, it.ephemeral) },
+            nueva.currentIndex,
+            0L,
+        )
         c.prepare()
         c.play()
     }
