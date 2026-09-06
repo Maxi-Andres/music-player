@@ -1,9 +1,37 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kover)
 }
+
+/**
+ * Datos de la clave con la que se firman los APK publicados.
+ *
+ * En esta compu salen de `keystore.properties` (ignorado por git); en GitHub Actions,
+ * de variables de entorno cargadas desde los secrets del repo. Si no hay ninguna de las
+ * dos, `release` queda sin firmar: sirve igual para compilar y para el lint, pero el
+ * APK no se puede instalar. Es a proposito, asi un clon del repo compila sin la clave.
+ */
+val propiedadesDeFirma = Properties().apply {
+    val archivo = rootProject.file("keystore.properties")
+    if (archivo.exists()) archivo.inputStream().use { load(it) }
+}
+
+fun datoDeFirma(clave: String, variable: String): String? =
+    propiedadesDeFirma.getProperty(clave) ?: System.getenv(variable)
+
+val almacenDeFirma = datoDeFirma("storeFile", "SIGNING_STORE_FILE")?.let(::file)
+    ?.takeIf { it.exists() }
+
+/**
+ * La version sale del tag de git cuando se publica (la calcula el workflow de release)
+ * y cae a estos valores en cualquier build local.
+ */
+val versionPublicada = System.getenv("VERSION_NAME") ?: "0.1.0"
+val codigoPublicado = System.getenv("VERSION_CODE")?.toIntOrNull() ?: 1
 
 android {
     namespace = "com.max.musicplayer"
@@ -13,10 +41,21 @@ android {
         applicationId = "com.max.musicplayer"
         minSdk = 26
         targetSdk = 37
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = codigoPublicado
+        versionName = versionPublicada
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    signingConfigs {
+        create("release") {
+            if (almacenDeFirma != null) {
+                storeFile = almacenDeFirma
+                storePassword = datoDeFirma("storePassword", "SIGNING_STORE_PASSWORD")
+                keyAlias = datoDeFirma("keyAlias", "SIGNING_KEY_ALIAS")
+                keyPassword = datoDeFirma("keyPassword", "SIGNING_KEY_PASSWORD")
+            }
+        }
     }
 
     buildTypes {
@@ -36,6 +75,8 @@ android {
             matchingFallbacks += listOf("release")
         }
         release {
+            // Sin clave no se firma: el build igual sale, pero el APK no instala.
+            signingConfig = signingConfigs.getByName("release").takeIf { almacenDeFirma != null }
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(

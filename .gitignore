@@ -12,3 +12,8 @@ local.properties
 *.apk
 *.aab
 /app/release/
+
+# Clave de firma: nunca al repo.
+keystore.properties
+*.jks
+*.keystore

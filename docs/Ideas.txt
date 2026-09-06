@@ -1,5 +1,3 @@
-poner tipo release? asi entro a github y lo descargo de ahi y a la mierda para que sea mas facil tipo descargarlo en otro celu o lo que sea
-
 que se puedan borrar canciones, asi podes borrar viste los audios de whatsap poronga
 
 que se pueda ver la cola o las canciones de la carpeta? en la lista de canciones me refiero por que si se pueden ver
@@ -73,3 +71,4 @@ cuando pones una imagen de fondo y estas en donde se hace el efecto de la miniat
 el boton de quitar imagen no se ve bien por que esta en dos renglones igual esta al pedo, osea cuando tocas unos de los colores de fondo se saca la imagen
 y la barra para oscurecer imagen es medio incomoda por que si quiero que se vea full por ejemplo me cuesta llegar al borde del celu con lso dedos por que toca con el costado de la funda, es una boludez, no se como se podria solucionar
 
+poner tipo release? asi entro a github y lo descargo de ahi y a la mierda para que sea mas facil tipo descargarlo en otro celu o lo que sea
