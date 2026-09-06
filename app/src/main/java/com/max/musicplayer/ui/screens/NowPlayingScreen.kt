@@ -1,8 +1,6 @@
 package com.max.musicplayer.ui.screens
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -11,7 +9,6 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.IntOffset
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -64,12 +61,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -79,10 +71,10 @@ import androidx.media3.common.Player
 import com.max.musicplayer.R
 import com.max.musicplayer.data.QueueEntry
 import com.max.musicplayer.data.Song
-import com.max.musicplayer.playback.PlayerConnection
 import com.max.musicplayer.ui.blendWith
 import com.max.musicplayer.ui.rememberArtworkTint
 import com.max.musicplayer.ui.components.AlbumArt
+import com.max.musicplayer.ui.components.AnilloDeProgreso
 import com.max.musicplayer.ui.components.glass
 import com.max.musicplayer.ui.components.MarqueeText
 import com.max.musicplayer.ui.components.formatDuration
@@ -99,15 +91,6 @@ private val TRACK_HEIGHT = 3.dp
 private val PLAY_BUTTON_SIZE = 72.dp
 private val PLAY_RING_SIZE = 86.dp
 private val PLAY_RING_STROKE = 4.dp
-
-/**
- * Un tinte muy oscuro no se veria contra el fondo, que tambien es oscuro: por debajo de
- * esto el anillo se dibuja con el color de acento.
- */
-private const val MIN_RING_LUMINANCE = 0.15f
-
-/** El anillo avanza al ritmo con el que el reproductor informa la posicion. */
-private val RING_STEP_MS = PlayerConnection.POSITION_POLL_MS.toInt()
 
 /** Pantalla de reproduccion. Ver docs/reference/04-now-playing.jpeg. */
 // El slider con thumb propio todavia es API experimental de Material 3.
@@ -141,6 +124,10 @@ fun NowPlayingScreen(
     onContextItemClick: (QueueEntry) -> Unit,
     /** Tenir el fondo con el color de la caratula (opcion de Personalizacion). */
     tintFromArtwork: Boolean = false,
+    /** Anillo de progreso alrededor del boton grande (opcion de Personalizacion). */
+    showRing: Boolean = false,
+    /** Color del anillo, ya resuelto por quien llama. */
+    ringColor: Color = Color.Unspecified,
 ) {
     // El tinte se calcula del color dominante de la tapa y se mezcla con el fondo del
     // tema: sin mezclar, un color vivo dejaria el texto ilegible.
@@ -161,12 +148,6 @@ fun NowPlayingScreen(
         label = "fondoMedio",
     )
     val pincel = Brush.verticalGradient(listOf(arriba, medio, fondoTema))
-
-    // El anillo se tine con la caratula cuando esa opcion esta prendida (el tinte ya es
-    // null si no lo esta) y cae al color de acento si la tapa da un color tan oscuro que
-    // no se distinguiria del fondo.
-    val colorAnillo = tinte?.takeIf { it.luminance() > MIN_RING_LUMINANCE }
-        ?: MaterialTheme.colorScheme.primary
 
     val tiraState = rememberLazyListState()
 
@@ -336,10 +317,7 @@ fun NowPlayingScreen(
                     modifier = Modifier.size(40.dp),
                 )
             }
-            AnilloDeProgreso(
-                fraction = posicionMostrada.toFloat() / duracion,
-                color = colorAnillo,
-            ) {
+            val botonDePlay: @Composable () -> Unit = {
                 Box(
                     modifier = Modifier
                         .size(PLAY_BUTTON_SIZE)
@@ -360,6 +338,18 @@ fun NowPlayingScreen(
                         modifier = Modifier.size(40.dp),
                     )
                 }
+            }
+
+            if (showRing) {
+                AnilloDeProgreso(
+                    fraction = posicionMostrada.toFloat() / duracion,
+                    color = ringColor,
+                    size = PLAY_RING_SIZE,
+                    stroke = PLAY_RING_STROKE,
+                    content = botonDePlay,
+                )
+            } else {
+                botonDePlay()
             }
             IconButton(onClick = onNext) {
                 Icon(
@@ -419,60 +409,6 @@ fun NowPlayingScreen(
         } else {
             Spacer(modifier = Modifier.height(72.dp))
         }
-    }
-}
-
-/**
- * Anillo de progreso alrededor del boton de play.
- *
- * Dice lo mismo que la barra de arriba, pero es lo que mirabas igual mientras apretas
- * play. El avance se anima con la misma duracion con la que llegan las posiciones del
- * reproductor (medio segundo), asi se mueve parejo en vez de a los saltos.
- */
-@Composable
-private fun AnilloDeProgreso(
-    fraction: Float,
-    color: Color,
-    content: @Composable () -> Unit,
-) {
-    val objetivo = fraction.coerceIn(0f, 1f)
-    val avance by animateFloatAsState(
-        targetValue = objetivo,
-        animationSpec = tween(RING_STEP_MS, easing = LinearEasing),
-        label = "anilloDeProgreso",
-    )
-
-    Box(
-        modifier = Modifier.size(PLAY_RING_SIZE),
-        contentAlignment = Alignment.Center,
-    ) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val trazo = PLAY_RING_STROKE.toPx()
-            val esquina = Offset(trazo / 2, trazo / 2)
-            val medida = Size(size.width - trazo, size.height - trazo)
-
-            // El circulo completo apagado marca cuanto falta.
-            drawArc(
-                color = color.copy(alpha = 0.20f),
-                startAngle = 0f,
-                sweepAngle = 360f,
-                useCenter = false,
-                topLeft = esquina,
-                size = medida,
-                style = Stroke(width = trazo),
-            )
-            // Arranca arriba de todo, como un reloj.
-            drawArc(
-                color = color,
-                startAngle = -90f,
-                sweepAngle = 360f * avance,
-                useCenter = false,
-                topLeft = esquina,
-                size = medida,
-                style = Stroke(width = trazo, cap = StrokeCap.Round),
-            )
-        }
-        content()
     }
 }
 

@@ -9,6 +9,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.material3.MaterialTheme
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.max.musicplayer.data.DirectoryTree
@@ -88,11 +89,23 @@ fun MusicApp(
 
     val cancionActual: Song? = queue.current?.song
 
+    // El anillo de progreso usa el color de acento salvo que se pida seguir la tapa. En
+    // ese caso el color se aviva (ver Color.vivid): el crudo es el mismo tono con el que
+    // se pinta el degrade del fondo y el anillo se perdia contra el.
+    val tinteDelAnillo = rememberArtworkTint(
+        songId = cancionActual?.id ?: 0L,
+        enabled = ajustes.ringFromArtwork && cancionActual != null,
+    )
+    val colorDelAnillo = tinteDelAnillo?.vivid() ?: MaterialTheme.colorScheme.primary
+
     val bottomBar: @Composable () -> Unit = {
         cancionActual?.let { song ->
             MiniPlayer(
                 song = song,
                 isPlaying = playback.isPlaying,
+                positionMs = playback.positionMs,
+                durationMs = playback.durationMs,
+                ringColor = colorDelAnillo,
                 onPlayPause = { vm.player.togglePlayPause() },
                 onQueueClick = { navegar(Destino.Queue) },
                 onExpand = { navegar(Destino.NowPlaying) },
@@ -220,6 +233,8 @@ fun MusicApp(
                     onOpenQueue = { navegar(Destino.Queue) },
                     onOpenEqualizer = { navegar(Destino.Equalizer) },
                     tintFromArtwork = ajustes.tintFromArtwork,
+                    showRing = ajustes.ringOnNowPlaying,
+                    ringColor = colorDelAnillo,
                     onContextItemClick = { entrada ->
                         val indice = queue.entries.indexOfFirst { it.uid == entrada.uid }
                         if (indice >= 0) vm.player.playQueueIndex(indice)
@@ -251,6 +266,9 @@ fun MusicApp(
                 onBackgroundImage = settingsVm::setBackgroundImage,
                 onBackgroundDim = settingsVm::setBackgroundDim,
                 onTintFromArtwork = settingsVm::setTintFromArtwork,
+                onGlassEffect = settingsVm::setGlassEffect,
+                onRingOnNowPlaying = settingsVm::setRingOnNowPlaying,
+                onRingFromArtwork = settingsVm::setRingFromArtwork,
                 onReset = { settingsVm.resetAll() },
             )
         }

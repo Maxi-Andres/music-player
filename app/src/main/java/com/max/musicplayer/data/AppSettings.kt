@@ -19,6 +19,16 @@ data class AppSettings(
      * como hace la app de referencia.
      */
     val tintFromArtwork: Boolean = true,
+    /** Botones y superficies translucidos con el canto iluminado, en vez de color liso. */
+    val glassEffect: Boolean = true,
+    /**
+     * Anillo de progreso alrededor del boton grande de la pantalla de reproduccion.
+     * Apagado por defecto: ahi ya esta la barra con la pastilla del tiempo, y el de la
+     * barra de abajo (que no se puede apagar) es el que se pidio.
+     */
+    val ringOnNowPlaying: Boolean = false,
+    /** El anillo toma el color de la tapa en vez del color de acento. */
+    val ringFromArtwork: Boolean = false,
 ) {
     val usesBackgroundImage: Boolean get() = !backgroundImageUri.isNullOrBlank()
 

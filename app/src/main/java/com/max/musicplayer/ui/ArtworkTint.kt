@@ -9,7 +9,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.graphics.ColorUtils
 import androidx.palette.graphics.Palette
 import com.max.musicplayer.data.ArtworkLoader
 import kotlinx.coroutines.Dispatchers
@@ -65,6 +67,23 @@ fun rememberArtworkTint(songId: Long, enabled: Boolean): Color? {
     return tinte
 }
 
+/**
+ * Sube el color a un brillo y una viveza minimos, conservando el tono.
+ *
+ * Hace falta porque el fondo de la pantalla de reproduccion ya es el color de la tapa
+ * mezclado con el fondo del tema: si el anillo de progreso usara el color crudo, seria
+ * de la misma familia que el degrade y se perderia contra el. Forzando la luminosidad y
+ * un piso de saturacion, el anillo queda siempre mas claro y mas vivo que el fondo,
+ * cualquiera sea la tapa.
+ */
+fun Color.vivid(): Color {
+    val hsl = FloatArray(3)
+    ColorUtils.colorToHSL(toArgb(), hsl)
+    hsl[1] = hsl[1].coerceAtLeast(MIN_SATURATION)
+    hsl[2] = TARGET_LIGHTNESS
+    return Color(ColorUtils.HSLToColor(hsl))
+}
+
 /** Mezcla dos colores; [ratio] 0 devuelve este color y 1 el otro. */
 fun Color.blendWith(other: Color, ratio: Float): Color {
     val r = ratio.coerceIn(0f, 1f)
@@ -77,3 +96,7 @@ fun Color.blendWith(other: Color, ratio: Float): Color {
 }
 
 private const val TINT_SAMPLE_PX = 128
+
+/** Valores fijos de [vivid]: claro para destacar sobre el fondo, sin llegar a blanco. */
+private const val TARGET_LIGHTNESS = 0.66f
+private const val MIN_SATURATION = 0.5f

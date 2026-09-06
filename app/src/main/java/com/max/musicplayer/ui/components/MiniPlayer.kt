@@ -24,11 +24,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.max.musicplayer.R
 import com.max.musicplayer.data.Song
+
+/** El anillo del mini reproductor: mas chico y mas fino que el de la pantalla grande. */
+private val MINI_RING_SIZE = 46.dp
+private val MINI_RING_STROKE = 2.5.dp
 
 /**
  * Barra fija de abajo con lo que esta sonando
@@ -38,6 +44,9 @@ import com.max.musicplayer.data.Song
 fun MiniPlayer(
     song: Song,
     isPlaying: Boolean,
+    positionMs: Long,
+    durationMs: Long,
+    ringColor: Color,
     onPlayPause: () -> Unit,
     onQueueClick: () -> Unit,
     onExpand: () -> Unit,
@@ -46,7 +55,7 @@ fun MiniPlayer(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface)
+            .glass(RectangleShape, withEdge = false, fallback = MaterialTheme.colorScheme.surface)
             .clickable(onClick = onExpand)
             // Sin esto la barra queda debajo de los botones de navegacion del sistema.
             .navigationBarsPadding()
@@ -80,15 +89,23 @@ fun MiniPlayer(
             )
         }
 
-        IconButton(onClick = onPlayPause) {
-            Icon(
-                imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                contentDescription = stringResource(
-                    if (isPlaying) R.string.cd_pause else R.string.cd_play,
-                ),
-                tint = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.size(30.dp),
-            )
+        AnilloDeProgreso(
+            // La duracion puede llegar en 0 mientras el tema todavia no cargo.
+            fraction = positionMs.toFloat() / durationMs.coerceAtLeast(1L),
+            color = ringColor,
+            size = MINI_RING_SIZE,
+            stroke = MINI_RING_STROKE,
+        ) {
+            IconButton(onClick = onPlayPause) {
+                Icon(
+                    imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                    contentDescription = stringResource(
+                        if (isPlaying) R.string.cd_pause else R.string.cd_play,
+                    ),
+                    tint = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.size(26.dp),
+                )
+            }
         }
 
         QueueIcon(onClick = onQueueClick)

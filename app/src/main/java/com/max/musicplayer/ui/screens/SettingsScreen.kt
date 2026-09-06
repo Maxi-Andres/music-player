@@ -62,6 +62,9 @@ fun SettingsScreen(
     onBackgroundImage: (android.net.Uri) -> Unit,
     onBackgroundDim: (Float) -> Unit,
     onTintFromArtwork: (Boolean) -> Unit,
+    onGlassEffect: (Boolean) -> Unit,
+    onRingOnNowPlaying: (Boolean) -> Unit,
+    onRingFromArtwork: (Boolean) -> Unit,
     onReset: () -> Unit,
     installedVersion: String,
     updateState: UpdateState,
@@ -142,30 +145,32 @@ fun SettingsScreen(
         }
 
         Seccion(stringResource(R.string.settings_now_playing))
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { onTintFromArtwork(!settings.tintFromArtwork) }
-                .padding(horizontal = 16.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = stringResource(R.string.settings_tint_title),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onBackground,
-                )
-                Text(
-                    text = stringResource(R.string.settings_tint_body),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Switch(
-                checked = settings.tintFromArtwork,
-                onCheckedChange = onTintFromArtwork,
-            )
-        }
+        FilaDeSwitch(
+            titulo = stringResource(R.string.settings_tint_title),
+            detalle = stringResource(R.string.settings_tint_body),
+            valor = settings.tintFromArtwork,
+            onChange = onTintFromArtwork,
+        )
+        FilaDeSwitch(
+            titulo = stringResource(R.string.settings_ring_title),
+            detalle = stringResource(R.string.settings_ring_body),
+            valor = settings.ringOnNowPlaying,
+            onChange = onRingOnNowPlaying,
+        )
+        FilaDeSwitch(
+            titulo = stringResource(R.string.settings_ring_color_title),
+            detalle = stringResource(R.string.settings_ring_color_body),
+            valor = settings.ringFromArtwork,
+            onChange = onRingFromArtwork,
+        )
+
+        Seccion(stringResource(R.string.settings_effects))
+        FilaDeSwitch(
+            titulo = stringResource(R.string.settings_glass_title),
+            detalle = stringResource(R.string.settings_glass_body),
+            valor = settings.glassEffect,
+            onChange = onGlassEffect,
+        )
 
         Seccion(stringResource(R.string.settings_folder_color))
         FilaDeColores(
@@ -328,6 +333,37 @@ private fun BarraDeOscurecer(valor: Float, onChange: (Float) -> Unit) {
                 tint = MaterialTheme.colorScheme.onBackground,
             )
         }
+    }
+}
+
+/** Fila de ajuste con interruptor. Toda la fila alterna, no solo el switch. */
+@Composable
+private fun FilaDeSwitch(
+    titulo: String,
+    detalle: String,
+    valor: Boolean,
+    onChange: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onChange(!valor) }
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = titulo,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+            Text(
+                text = detalle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Switch(checked = valor, onCheckedChange = onChange)
     }
 }
 

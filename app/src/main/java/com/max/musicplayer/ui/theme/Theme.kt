@@ -17,6 +17,14 @@ import com.max.musicplayer.data.AppSettings
  */
 val LocalFolderColor = staticCompositionLocalOf { FolderAmber }
 
+/**
+ * Si los botones y superficies se dibujan como vidrio o con color liso.
+ *
+ * Va por CompositionLocal para que `Modifier.glass` lo lea solo: si no, habria que
+ * bajarle el ajuste a mano a cada pantalla que use un boton.
+ */
+val LocalGlassEnabled = staticCompositionLocalOf { true }
+
 /** Un fondo claro necesita texto oscuro; si no, no se lee nada. */
 private fun contentColorFor(background: Color): Color =
     if (background.luminance() > 0.5f) Color(0xFF101010) else TextPrimary
@@ -85,7 +93,10 @@ fun MusicPlayerTheme(
         onSurfaceVariant = secundario,
     )
 
-    CompositionLocalProvider(LocalFolderColor provides Color(settings.folderColor)) {
+    CompositionLocalProvider(
+        LocalFolderColor provides Color(settings.folderColor),
+        LocalGlassEnabled provides settings.glassEffect,
+    ) {
         MaterialTheme(
             colorScheme = colores,
             typography = Typography(),

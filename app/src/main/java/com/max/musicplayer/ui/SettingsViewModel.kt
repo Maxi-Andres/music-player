@@ -101,5 +101,13 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
     fun setTintFromArtwork(enabled: Boolean) =
         viewModelScope.launch { repo.setTintFromArtwork(enabled) }
 
+    fun setGlassEffect(enabled: Boolean) = viewModelScope.launch { repo.setGlassEffect(enabled) }
+
+    fun setRingOnNowPlaying(enabled: Boolean) =
+        viewModelScope.launch { repo.setRingOnNowPlaying(enabled) }
+
+    fun setRingFromArtwork(enabled: Boolean) =
+        viewModelScope.launch { repo.setRingFromArtwork(enabled) }
+
     fun resetAll() = viewModelScope.launch { repo.resetAll() }
 }

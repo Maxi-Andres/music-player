@@ -24,8 +24,7 @@ fun ScrollToTopButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .size(52.dp)
-            .clip(CircleShape)
-            .background(Color.White)
+            .glass(CircleShape, fallback = Color.White)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {

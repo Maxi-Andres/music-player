@@ -11,6 +11,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
+import com.max.musicplayer.ui.theme.LocalGlassEnabled
 
 /** Grosor del canto iluminado. Mas que esto ya parece un marco dibujado. */
 private val GLASS_EDGE = 1.dp
@@ -32,7 +33,14 @@ private val GLASS_EDGE = 1.dp
  * recien se nota con una imagen de fondo puesta.
  */
 @Composable
-fun Modifier.glass(shape: Shape, withEdge: Boolean = true): Modifier {
+fun Modifier.glass(
+    shape: Shape,
+    withEdge: Boolean = true,
+    fallback: Color = MaterialTheme.colorScheme.surfaceVariant,
+): Modifier {
+    // Apagado desde Personalizacion: color liso, exactamente como se veia antes.
+    if (!LocalGlassEnabled.current) return this.clip(shape).background(fallback)
+
     val temaClaro = MaterialTheme.colorScheme.background.luminance() > 0.5f
     val brillo = if (temaClaro) Color.Black else Color.White
 

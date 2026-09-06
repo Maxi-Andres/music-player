@@ -25,6 +25,17 @@ class AppSettingsTest {
     }
 
     @Test
+    fun `los efectos arrancan como se penso`() {
+        val ajustes = AppSettings()
+
+        // El vidrio viene puesto; los dos del anillo grande, no: en esa pantalla ya esta
+        // la barra con la pastilla del tiempo, y el color por defecto es el de acento.
+        assertThat(ajustes.glassEffect).isTrue()
+        assertThat(ajustes.ringOnNowPlaying).isFalse()
+        assertThat(ajustes.ringFromArtwork).isFalse()
+    }
+
+    @Test
     fun `las paletas ofrecidas no tienen colores repetidos`() {
         assertThat(AppSettings.ACCENT_CHOICES).containsNoDuplicates()
         assertThat(AppSettings.BACKGROUND_CHOICES).containsNoDuplicates()

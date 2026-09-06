@@ -32,6 +32,9 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
             backgroundImageUri = prefs[IMAGEN],
             backgroundDim = prefs[OSCURECER] ?: AppSettings.DEFAULT_DIM,
             tintFromArtwork = prefs[TINTE] ?: true,
+            glassEffect = prefs[VIDRIO] ?: true,
+            ringOnNowPlaying = prefs[ANILLO_GRANDE] ?: false,
+            ringFromArtwork = prefs[ANILLO_CARATULA] ?: false,
         )
     }
 
@@ -52,6 +55,12 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
     suspend fun setBackgroundDim(value: Float) = edit { it[OSCURECER] = value }
 
     suspend fun setTintFromArtwork(enabled: Boolean) = edit { it[TINTE] = enabled }
+
+    suspend fun setGlassEffect(enabled: Boolean) = edit { it[VIDRIO] = enabled }
+
+    suspend fun setRingOnNowPlaying(enabled: Boolean) = edit { it[ANILLO_GRANDE] = enabled }
+
+    suspend fun setRingFromArtwork(enabled: Boolean) = edit { it[ANILLO_CARATULA] = enabled }
 
     /**
      * Cuando se consulto GitHub por ultima vez, para no pegarle en cada arranque.
@@ -77,5 +86,8 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
         val OSCURECER = floatPreferencesKey("oscurecer_fondo")
         val TINTE = booleanPreferencesKey("tinte_caratula")
         val ULTIMO_CHEQUEO = longPreferencesKey("ultimo_chequeo_version")
+        val VIDRIO = booleanPreferencesKey("efecto_vidrio")
+        val ANILLO_GRANDE = booleanPreferencesKey("anillo_reproduciendo")
+        val ANILLO_CARATULA = booleanPreferencesKey("anillo_caratula")
     }
 }

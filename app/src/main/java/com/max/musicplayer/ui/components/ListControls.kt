@@ -29,6 +29,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.max.musicplayer.R
+import com.max.musicplayer.ui.theme.LocalGlassEnabled
 
 /**
  * Cabecera de lista: "N Canciones", el boton de ordenar y el de seleccion multiple.
@@ -171,9 +172,19 @@ fun PlayActionPills(
     modifier: Modifier = Modifier,
     filled: Boolean = false,
 ) {
+    // Con el vidrio prendido las dos variantes quedan translucidas sobre un fondo
+    // oscuro, asi que el contenido tiene que ser claro en las dos: el casi negro de la
+    // variante rellena no se leeria. Apagado, cada una vuelve a sus colores de siempre.
+    val vidrio = LocalGlassEnabled.current
+    val rellenaSolida = filled && !vidrio
+
     val contenedor = if (filled) Color.White else MaterialTheme.colorScheme.surfaceVariant
-    val contenido = if (filled) Color(0xFF101010) else MaterialTheme.colorScheme.onBackground
-    val tinteIcono = if (filled) Color(0xFF101010) else MaterialTheme.colorScheme.primary
+    val contenido = if (rellenaSolida) {
+        Color(0xFF101010)
+    } else {
+        MaterialTheme.colorScheme.onBackground
+    }
+    val tinteIcono = if (rellenaSolida) Color(0xFF101010) else MaterialTheme.colorScheme.primary
 
     Row(
         modifier = modifier
@@ -189,7 +200,6 @@ fun PlayActionPills(
             iconTint = tinteIcono,
             onClick = onShuffleClick,
             modifier = Modifier.weight(1f),
-            glassy = !filled,
         )
         Pill(
             text = stringResource(R.string.action_play),
@@ -199,7 +209,6 @@ fun PlayActionPills(
             iconTint = tinteIcono,
             onClick = onPlayClick,
             modifier = Modifier.weight(1f),
-            glassy = !filled,
         )
     }
 }
@@ -213,18 +222,16 @@ private fun Pill(
     iconTint: Color,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    glassy: Boolean = false,
 ) {
     val forma = RoundedCornerShape(28.dp)
     Button(
         onClick = onClick,
-        // La variante oscura se dibuja como vidrio: el color de relleno se apaga y lo
-        // pone el modifier, que ademas deja pasar el fondo. La blanca rellena queda
-        // solida, como en la referencia.
-        modifier = if (glassy) modifier.glass(forma) else modifier,
+        // El fondo lo pinta el modifier: como vidrio, o liso con [container] si el
+        // efecto esta apagado. Por eso el boton en si va transparente.
+        modifier = modifier.glass(forma, fallback = container),
         shape = forma,
         colors = ButtonDefaults.buttonColors(
-            containerColor = if (glassy) Color.Transparent else container,
+            containerColor = Color.Transparent,
             contentColor = content,
         ),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(

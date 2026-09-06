@@ -49,6 +49,33 @@ class SettingsRepositoryTest {
     }
 
     @Test
+    fun `guarda cada interruptor de efectos por separado`() = runTest {
+        val repo = repositorio()
+
+        repo.setGlassEffect(false)
+        repo.setRingOnNowPlaying(true)
+        repo.setRingFromArtwork(true)
+
+        val ajustes = repo.settings.first()
+        assertThat(ajustes.glassEffect).isFalse()
+        assertThat(ajustes.ringOnNowPlaying).isTrue()
+        assertThat(ajustes.ringFromArtwork).isTrue()
+        // No se pisan entre ellos ni tocan lo que ya estaba.
+        assertThat(ajustes.tintFromArtwork).isTrue()
+    }
+
+    @Test
+    fun `restablecer devuelve los efectos a su valor por defecto`() = runTest {
+        val repo = repositorio()
+        repo.setGlassEffect(false)
+        repo.setRingOnNowPlaying(true)
+
+        repo.resetAll()
+
+        assertThat(repo.settings.first()).isEqualTo(AppSettings())
+    }
+
+    @Test
     fun `guarda el color de las carpetas sin tocar el resto`() = runTest {
         val repo = repositorio()
 

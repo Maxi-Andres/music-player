@@ -97,6 +97,13 @@ Usá el menú ⋮ de una canción para agregarla acá; suena a continuación y d
     <string name="settings_now_playing">Pantalla de reproducción</string>
     <string name="settings_tint_title">Teñir con la carátula</string>
     <string name="settings_tint_body">El fondo toma el color dominante de la tapa del álbum</string>
+    <string name="settings_ring_title">Anillo en el botón de reproducción</string>
+    <string name="settings_ring_body">Rodea al botón grande con el avance de la canción</string>
+    <string name="settings_ring_color_title">Anillo con el color de la carátula</string>
+    <string name="settings_ring_color_body">Si no, usa tu color de acento</string>
+    <string name="settings_effects">Efectos</string>
+    <string name="settings_glass_title">Efecto vidrio</string>
+    <string name="settings_glass_body">Botones y barras translúcidos, con el canto iluminado</string>
     <string name="settings_updates">Actualizaciones</string>
     <string name="settings_version">Versión %1$s</string>
     <string name="settings_check_updates">Buscar actualizaciones</string>
