@@ -44,12 +44,33 @@ class PlaybackService : MediaSessionService() {
     private var mediaSession: MediaSession? = null
 
     /**
+     * Anterior y siguiente, declarados por nosotros y clavados a su lugar.
+     *
+     * Media3 los pone solo, pero **los saca cuando no hay adonde ir**: con una sola
+     * cancion en la carpeta desaparecia el de siguiente, el hueco lo tapaba un boton
+     * propio y toda la fila cambiaba de orden. Declarandolos con su `playerCommand` y su
+     * slot fijo siguen siempre en el mismo lugar, y Media3 los muestra apagados cuando no
+     * se pueden usar en vez de esconderlos.
+     */
+    private val botonAnterior: CommandButton by lazy {
+        CommandButton.Builder(CommandButton.ICON_PREVIOUS)
+            .setDisplayName(getString(R.string.cd_previous))
+            .setPlayerCommand(Player.COMMAND_SEEK_TO_PREVIOUS)
+            .setSlots(CommandButton.SLOT_BACK)
+            .build()
+    }
+
+    private val botonSiguiente: CommandButton by lazy {
+        CommandButton.Builder(CommandButton.ICON_NEXT)
+            .setDisplayName(getString(R.string.cd_next))
+            .setPlayerCommand(Player.COMMAND_SEEK_TO_NEXT)
+            .setSlots(CommandButton.SLOT_FORWARD)
+            .build()
+    }
+
+    /**
      * Botones propios de la notificacion y la pantalla de bloqueo: repetir y cerrar.
      * Media3 no los pone solo, hay que declararlos como comandos de la sesion.
-     *
-     * El orden importa: el panel del sistema ubica el primer boton propio a la
-     * izquierda de los controles y el segundo a la derecha. Por eso repetir va
-     * primero y la X queda del lado derecho, como se pidio.
      */
     private fun botonRepetir(repeatMode: Int): CommandButton {
         val icono = when (repeatMode) {
@@ -73,8 +94,16 @@ class PlaybackService : MediaSessionService() {
             .build()
     }
 
-    private fun preferencias(repeatMode: Int) =
-        ImmutableList.of(botonRepetir(repeatMode), botonCerrar)
+    /**
+     * El orden de la fila. Anterior y siguiente van clavados a sus slots; repetir y la X
+     * ocupan lo que queda a los costados.
+     */
+    private fun preferencias(repeatMode: Int) = ImmutableList.of(
+        botonAnterior,
+        botonSiguiente,
+        botonRepetir(repeatMode),
+        botonCerrar,
+    )
 
     override fun onCreate() {
         super.onCreate()

@@ -39,6 +39,7 @@ android {
 
     defaultConfig {
         applicationId = "com.max.musicplayer"
+        manifestPlaceholders["appLabel"] = "@string/app_name"
         minSdk = 26
         targetSdk = 37
         versionCode = codigoPublicado
@@ -60,6 +61,11 @@ android {
 
     buildTypes {
         debug {
+            // App aparte: asi el APK de desarrollo convive con el que se instalo desde
+            // GitHub Releases en vez de chocar con el (firmas distintas) o reemplazarlo.
+            applicationIdSuffix = ".dev"
+            manifestPlaceholders["appLabel"] = "Music dev"
+
             // Cobertura de los tests instrumentados (Kover aun no la mide, la mide AGP/JaCoCo).
             enableAndroidTestCoverage = true
             enableUnitTestCoverage = false // la de unit tests la maneja Kover

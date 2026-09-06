@@ -42,6 +42,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -50,9 +51,12 @@ import androidx.compose.ui.zIndex
 import com.max.musicplayer.R
 import com.max.musicplayer.data.QueueEntry
 import com.max.musicplayer.ui.components.AlbumArt
-import kotlin.math.abs
+import kotlin.math.floor
 
 private val ROW_HEIGHT = 64.dp
+
+/** Etiqueta de la zona que captura el arrastre, para poder apuntarle desde los tests. */
+const val QUEUE_DRAG_TAG = "cola-asa"
 
 /**
  * Ancho de la zona que captura el arrastre, medido desde el borde derecho: cubre el asa
@@ -60,8 +64,14 @@ private val ROW_HEIGHT = 64.dp
  */
 private val DRAG_ZONE_WIDTH = 48.dp
 
-/** Cuanto scrollea por cuadro cuando arrastras contra un borde de la lista. */
-private const val AUTO_SCROLL_PX = 14f
+/**
+ * Zona sensible del auto-scroll en cada punta, medida en filas. Ancha a proposito: con un
+ * borde finito hay que apuntar con el dedo y parece que no funcionara.
+ */
+private const val AUTO_SCROLL_ZONE_ROWS = 1.5f
+
+/** Velocidad maxima del auto-scroll, en pixeles por cuadro, al fondo de la zona. */
+private const val AUTO_SCROLL_MAX_PX = 26f
 
 /**
  * Cola de reproduccion: solo lo que el usuario encolo a mano.
@@ -88,65 +98,72 @@ fun QueueScreen(
     val alturaFilaPx = with(LocalDensity.current) { ROW_HEIGHT.toPx() }
     val estadoLista = rememberLazyListState()
 
-    // El reordenamiento se calcula mientras arrastras y se aplica **una sola vez, al
-    // soltar**. Moverlo en cada salto reubicaba la fila dentro de la composicion (la
-    // lista usa el uid de clave), y eso desmontaba el nodo que escuchaba el gesto.
+    // El reordenamiento se calcula mientras arrastras y se aplica una sola vez al soltar:
+    // mover en cada salto reubicaba la fila en la composicion (la lista usa el uid de
+    // clave) y eso desmontaba el nodo que escuchaba el gesto.
     //
-    // Lo que se guarda es **donde esta el dedo dentro de la lista**, no cuanto se
-    // arrastro. Acumular deltas fallaba en dos frentes: la fila trasladada devuelve
-    // diferencias que tienden a cero (Compose informa la posicion relativa al nodo ya
-    // movido) y el auto-scroll las contaba dos veces. Una posicion absoluta contra el
-    // layout actual no tiene ninguno de los dos problemas.
+    // Todo se calcula con **posiciones**, no acumulando distancias. Acumular fallaba por
+    // partida doble: la fila trasladada informa diferencias que tienden a cero (Compose
+    // da la posicion relativa al nodo ya movido) y el auto-scroll las contaba dos veces.
+    // Como todas las filas miden lo mismo, alcanza con aritmetica sobre el layout.
     var uidArrastrado by remember { mutableStateOf<Long?>(null) }
-    var origen by remember { mutableIntStateOf(-1) }
+    var indiceOrigen by remember { mutableIntStateOf(-1) }
+    // Donde dentro de la fila la agarraste. Sin esto la fila salta para centrarse en el
+    // dedo apenas empieza el gesto.
+    var agarreEnFila by remember { mutableFloatStateOf(0f) }
+    // Posicion del dedo en coordenadas de la lista (no de la fila, que se mueve).
     var yDelDedo by remember { mutableFloatStateOf(0f) }
 
-    val filaArrastrada = estadoLista.layoutInfo.visibleItemsInfo
-        .firstOrNull { it.key == uidArrastrado }
+    /** Donde deja el layout a la fila [indice]. Vale tambien fuera de la pantalla. */
+    fun offsetDe(indice: Int): Float {
+        val primera = estadoLista.layoutInfo.visibleItemsInfo.firstOrNull() ?: return 0f
+        return primera.offset + (indice - primera.index) * alturaFilaPx
+    }
+
+    /** Borde de arriba de la fila arrastrada, pegado al dedo. */
+    fun topeArrastrado(): Float = yDelDedo - agarreEnFila
 
     /**
-     * A que posicion iria la fila si soltaras ahora: la que ocupa el lugar donde esta el
-     * dedo. Fuera de la lista, se pega al extremo mas cercano.
+     * A que posicion iria si soltaras ahora: la ranura que ocupa el centro de la fila.
      *
-     * Es una funcion y no un valor calculado a proposito. `detectDragGestures` guarda los
-     * callbacks que le pasaron al empezar, asi que un `val` de la composicion le llegaria
-     * congelado en -1; una funcion vuelve a leer el estado cada vez que se la llama.
+     * Es funcion y no un valor de la composicion porque `detectDragGestures` se queda con
+     * los callbacks del momento en que empezo el gesto; un `val` le llegaria congelado.
      */
     fun destinoActual(): Int {
-        if (uidArrastrado == null) return -1
-        val visibles = estadoLista.layoutInfo.visibleItemsInfo
-        return visibles.firstOrNull { yDelDedo >= it.offset && yDelDedo < it.offset + it.size }
-            ?.index
-            ?: visibles.minByOrNull { abs(it.offset + it.size / 2f - yDelDedo) }?.index
-            ?: -1
+        if (indiceOrigen < 0 || queued.isEmpty()) return -1
+        val primera = estadoLista.layoutInfo.visibleItemsInfo.firstOrNull()
+            ?: return indiceOrigen
+        val centro = topeArrastrado() + alturaFilaPx / 2f
+        val ranura = primera.index + floor((centro - primera.offset) / alturaFilaPx).toInt()
+        return ranura.coerceIn(0, queued.lastIndex)
     }
 
     val destino = destinoActual()
 
-    /**
-     * Cuanto hay que correr cada fila para dibujar el arrastre.
-     *
-     * La arrastrada se centra en el dedo, calculado contra su posicion **actual** en el
-     * layout: si la lista scrollea, la fila la sigue sin cuentas extra. Las del medio se
-     * corren una posicion y dejan a la vista el hueco donde va a caer.
-     */
+    /** Cuanto correr cada fila para dibujar el arrastre. */
     fun corrimientoDe(indice: Int, esLaArrastrada: Boolean): Float = when {
-        esLaArrastrada -> filaArrastrada?.let { yDelDedo - (it.offset + it.size / 2f) } ?: 0f
-        destino < 0 || origen < 0 -> 0f
-        origen < destino && indice in (origen + 1)..destino -> -alturaFilaPx
-        destino < origen && indice in destino until origen -> alturaFilaPx
+        esLaArrastrada -> topeArrastrado() - offsetDe(indice)
+        destino < 0 || indiceOrigen < 0 -> 0f
+        indiceOrigen < destino && indice in (indiceOrigen + 1)..destino -> -alturaFilaPx
+        destino < indiceOrigen && indice in destino until indiceOrigen -> alturaFilaPx
         else -> 0f
     }
 
-    // Con la cola mas larga que la pantalla, llevar una cancion arriba o abajo de todo
-    // obliga a que la lista acompanie al dedo.
+    // Con la cola mas larga que la pantalla, la lista acompania al dedo. La zona sensible
+    // es ancha a proposito: con un borde finito hay que apuntar y se siente que no anda.
+    // La velocidad crece cuanto mas adentro de la zona estas.
     LaunchedEffect(uidArrastrado) {
         if (uidArrastrado == null) return@LaunchedEffect
         while (true) {
-            val actual = estadoLista.layoutInfo
+            val info = estadoLista.layoutInfo
+            val zona = alturaFilaPx * AUTO_SCROLL_ZONE_ROWS
+            val tope = topeArrastrado()
+            val faltaArriba = (info.viewportStartOffset + zona) - tope
+            val faltaAbajo = (tope + alturaFilaPx) - (info.viewportEndOffset - zona)
+
             val paso = when {
-                yDelDedo < actual.viewportStartOffset + alturaFilaPx -> -AUTO_SCROLL_PX
-                yDelDedo > actual.viewportEndOffset - alturaFilaPx -> AUTO_SCROLL_PX
+                faltaArriba > 0f -> -(faltaArriba / zona).coerceIn(0f, 1f) * AUTO_SCROLL_MAX_PX
+                faltaAbajo > 0f -> (faltaAbajo / zona).coerceIn(0f, 1f) * AUTO_SCROLL_MAX_PX
                 else -> 0f
             }
             if (paso != 0f) estadoLista.scrollBy(paso)
@@ -220,44 +237,46 @@ fun QueueScreen(
 
                     // Zona invisible que escucha el arrastre, encima del asa.
                     //
-                    // Va aca afuera y NO adentro de la fila a proposito: la fila se mueve
-                    // con `translationY`, y un nodo que se mueve junto con el dedo informa
-                    // posiciones que casi no cambian. Esta zona se queda en el lugar que
-                    // el layout le da a la fila. Una vez que el gesto empezo aca, Compose
-                    // le sigue mandando ese dedo aunque se vaya lejos.
-                    //
-                    // Sumarle el `offset` de la fila pasa la posicion local a coordenadas
-                    // de la lista, que es donde se compara contra las demas y lo unico
-                    // que hace falta saber.
+                    // Vive aca afuera y NO adentro de la fila a proposito: la fila se
+                    // mueve con `translationY`, y un nodo que se mueve junto con el dedo
+                    // informa posiciones que casi no cambian. Esta se queda donde el
+                    // layout puso a la fila. Una vez que el gesto empezo aca, Compose le
+                    // sigue mandando ese dedo aunque se vaya lejos.
                     Box(
                         modifier = Modifier
                             .align(Alignment.CenterEnd)
                             .width(DRAG_ZONE_WIDTH)
                             .fillMaxHeight()
+                            .testTag(QUEUE_DRAG_TAG)
                             .pointerInput(entrada.uid) {
+                                // La posicion local es relativa a esta zona, que ocupa el
+                                // alto de la fila; sumarle el offset de la fila la lleva a
+                                // coordenadas de la lista, que es donde se compara todo.
                                 fun yEnLista(local: Float): Float {
-                                    val fila = estadoLista.layoutInfo.visibleItemsInfo
-                                        .firstOrNull { it.key == entrada.uid }
-                                    return (fila?.offset ?: 0) + local
+                                    val posicion = queued.indexOfFirst { it.uid == entrada.uid }
+                                    return offsetDe(posicion) + local
                                 }
 
                                 detectDragGestures(
-                                    onDragStart = { posicion ->
+                                    onDragStart = { toque ->
+                                        indiceOrigen = queued.indexOfFirst {
+                                            it.uid == entrada.uid
+                                        }
+                                        agarreEnFila = toque.y
+                                        yDelDedo = yEnLista(toque.y)
                                         uidArrastrado = entrada.uid
-                                        origen = queued.indexOfFirst { it.uid == entrada.uid }
-                                        yDelDedo = yEnLista(posicion.y)
                                     },
                                     onDragEnd = {
                                         val hasta = destinoActual()
-                                        if (origen >= 0 && hasta >= 0 && hasta != origen) {
-                                            onMove(baseIndex + origen, baseIndex + hasta)
+                                        if (indiceOrigen >= 0 && hasta >= 0 && hasta != indiceOrigen) {
+                                            onMove(baseIndex + indiceOrigen, baseIndex + hasta)
                                         }
                                         uidArrastrado = null
-                                        origen = -1
+                                        indiceOrigen = -1
                                     },
                                     onDragCancel = {
                                         uidArrastrado = null
-                                        origen = -1
+                                        indiceOrigen = -1
                                     },
                                     onDrag = { cambio, _ ->
                                         cambio.consume()
