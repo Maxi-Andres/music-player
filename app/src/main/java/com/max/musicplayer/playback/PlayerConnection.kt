@@ -138,7 +138,8 @@ class PlayerConnection(
 
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
             val player = controller ?: return
-            // La cancion cambio: movemos el modelo y descartamos lo efimero ya escuchado.
+            // La cancion cambio: movemos el modelo, que descarta lo efimero ya escuchado
+            // y corre detras lo que se salteo.
             val nueva = _queue.value.moveToIndex(player.currentMediaItemIndex)
             reconcile(nueva)
         }
@@ -384,8 +385,13 @@ class PlayerConnection(
     }
 
     /**
-     * Aplica al player las entradas que el modelo elimino, de atras hacia adelante
-     * para que los indices no se corran mientras se borra.
+     * Deja el timeline del reproductor igual al modelo.
+     *
+     * Primero saca lo que el modelo elimino, de atras hacia adelante para que los indices
+     * no se corran mientras se borra, y despues acomoda el orden con movimientos puntuales:
+     * saltar a un tema de la cola ya no descarta los de arriba, los corre detras, y eso el
+     * player tambien lo tiene que reflejar. Se evita `setMediaItems`, que rearma el
+     * timeline entero y corta el audio.
      */
     private fun reconcile(nueva: PlayQueue) {
         val c = controller ?: run { _queue.value = nueva; return }
@@ -398,6 +404,19 @@ class PlayerConnection(
             .forEach { (indice, _) ->
                 if (indice < c.mediaItemCount) c.removeMediaItem(indice)
             }
+
+        // Orden que quedo en el player despues de borrar; se va acomodando de a un
+        // movimiento, de adelante para atras, hasta que coincide con el modelo.
+        val orden = antes.entries.filter { it.uid in quedan }.map { it.uid }.toMutableList()
+        nueva.entries.forEachIndexed { destino, entrada ->
+            val origen = orden.indexOf(entrada.uid)
+            if (origen < 0 || origen == destino) return@forEachIndexed
+            if (origen < c.mediaItemCount && destino < c.mediaItemCount) {
+                c.moveMediaItem(origen, destino)
+            }
+            orden.add(destino, orden.removeAt(origen))
+        }
+
         _queue.value = nueva
     }
 

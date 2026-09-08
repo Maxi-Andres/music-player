@@ -107,18 +107,30 @@ data class PlayQueue(
     }
 
     /**
-     * Mueve la reproduccion a [index] y descarta los temas efimeros que quedaron atras:
-     * ya sonaron, asi que salen de la cola.
+     * Mueve la reproduccion a [index].
+     *
+     * Lo efimero que ya sono se consume, pero lo que salteaste **no se pierde**: pasa a
+     * sonar detras de la elegida, en el mismo orden en que estaba. Tocar la cuarta de una
+     * cola de ocho antes borraba las tres de arriba; ahora suena la cuarta y las otras
+     * siguen ahi, corridas un lugar.
+     *
+     * Avanzar de a una (que termine el tema, o "siguiente") no saltea nada, asi que lo
+     * efimero se sigue consumiendo igual que siempre.
      */
     fun moveToIndex(index: Int): PlayQueue {
         if (index !in entries.indices) return this
 
         val objetivo = entries[index]
-        val sobrevivientes = entries.filterIndexed { i, e ->
-            i >= index || !e.ephemeral
+        // Las encoladas a mano que quedaron entre la actual y la elegida: se salvan.
+        val salteadas = entries.filterIndexed { i, e ->
+            e.ephemeral && i > currentIndex && i < index
         }
-        val nuevoIndice = sobrevivientes.indexOfFirst { it.uid == objetivo.uid }
-        return copy(entries = sobrevivientes, currentIndex = nuevoIndice)
+        // De lo de adelante sobrevive el contexto; lo efimero de ahi o ya sono (se
+        // consume) o esta en [salteadas], que se reinserta detras de la elegida.
+        val antes = entries.take(index).filter { !it.ephemeral }
+
+        val nuevas = antes + objetivo + salteadas + entries.drop(index + 1)
+        return copy(entries = nuevas, currentIndex = antes.size)
     }
 
     /** Saca una entrada de la cola, corrigiendo el indice actual. */

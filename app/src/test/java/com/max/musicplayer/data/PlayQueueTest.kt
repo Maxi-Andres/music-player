@@ -186,24 +186,81 @@ class PlayQueueTest {
     // --- consumo: lo efimero desaparece despues de sonar ---
 
     @Test
-    fun `al pasar de largo, la cancion efimera se va de la cola`() {
+    fun `la efimera se consume recien cuando termina de sonar`() {
         val q = PlayQueue.fromContext(contexto, 0)
             .playNext(extra, uid = 100) // queda en indice 1
+            .moveToIndex(1) // suena la encolada
+            .moveToIndex(2) // termina y sigue el contexto
 
-        val despues = q.moveToIndex(2) // avanzamos mas alla de la encolada
-
-        assertThat(despues.titulos()).doesNotContain("Encolada")
+        assertThat(q.titulos()).doesNotContain("Encolada")
     }
 
     @Test
     fun `despues de consumir lo efimero se retoma el contexto donde estaba`() {
         val q = PlayQueue.fromContext(contexto, 0)
             .playNext(extra, uid = 100)
+            .moveToIndex(1)
             .moveToIndex(2) // la siguiente del contexto era Tema 2
 
         assertThat(q.current?.song?.title).isEqualTo("Tema 2")
         assertThat(q.titulos())
             .containsExactly("Tema 1", "Tema 2", "Tema 3", "Tema 4", "Tema 5").inOrder()
+    }
+
+    @Test
+    fun `saltar a un tema de la cola no borra los que estaban antes`() {
+        // Cola de cuatro encoladas a mano detras de Tema 1; el usuario toca la tercera.
+        var q = PlayQueue.fromContext(contexto, 0)
+        listOf("A", "B", "C", "D").forEachIndexed { i, nombre ->
+            q = q.addToQueue(song(id = 100L + i, title = nombre), uid = 100L + i)
+        }
+
+        val despues = q.moveToIndex(q.ephemeralBaseIndex + 2) // la "C"
+
+        assertThat(despues.current?.song?.title).isEqualTo("C")
+        // Las salteadas no se pierden: siguen en la cola, en el mismo orden.
+        assertThat(despues.pendingEphemeral.map { it.song.title })
+            .containsExactly("A", "B", "D").inOrder()
+    }
+
+    @Test
+    fun `saltar en la cola deja lo salteado pegado detras de la elegida`() {
+        var q = PlayQueue.fromContext(contexto, 0)
+        listOf("A", "B", "C").forEachIndexed { i, nombre ->
+            q = q.addToQueue(song(id = 100L + i, title = nombre), uid = 100L + i)
+        }
+
+        val despues = q.moveToIndex(q.ephemeralBaseIndex + 1) // la "B"
+
+        assertThat(despues.titulos())
+            .containsExactly("Tema 1", "B", "A", "C", "Tema 2", "Tema 3", "Tema 4", "Tema 5")
+            .inOrder()
+        // El bloque efimero sigue arrancando justo despues de la actual.
+        assertThat(despues.ephemeralBaseIndex).isEqualTo(despues.currentIndex + 1)
+    }
+
+    @Test
+    fun `saltar a otro tema del contexto conserva lo encolado a mano`() {
+        val q = PlayQueue.fromContext(contexto, 0)
+            .playNext(extra, uid = 100) // queda en indice 1
+
+        val despues = q.moveToIndex(3) // se toca Tema 3 en la tira del contexto
+
+        assertThat(despues.current?.song?.title).isEqualTo("Tema 3")
+        assertThat(despues.pendingEphemeral.map { it.song.title }).containsExactly("Encolada")
+    }
+
+    @Test
+    fun `saltar en la cola no pierde ni duplica canciones`() {
+        var q = PlayQueue.fromContext(contexto, 1)
+        listOf("A", "B", "C").forEachIndexed { i, nombre ->
+            q = q.addToQueue(song(id = 100L + i, title = nombre), uid = 100L + i)
+        }
+
+        val despues = q.moveToIndex(q.ephemeralBaseIndex + 2)
+
+        assertThat(despues.entries.map { it.uid })
+            .containsExactlyElementsIn(q.entries.map { it.uid })
     }
 
     @Test

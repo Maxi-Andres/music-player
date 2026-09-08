@@ -9,6 +9,7 @@ en las notificaciones esta la opcion para repetir, me parace mejor la opcion par
 se podrian mejorar los icons, por ejempl oel de aldelantar 10segs es una pija el de la otra app esta mejor
 
 
+
 ------------------------------------------------------------done:
 
 en canciones tambien tiene que estar el buscador por letra
@@ -84,3 +85,5 @@ cual es la diferencia entre reproducir a continuacion y agregar a la cola?
 que en el circulito de la imagen del play te ponga como una liena al rededor que te diga cuanta cancion paso y quiza que se pueda personalizar el color de eso tambien? tipo que tambien se tiña, o que se le pueda poner un fondo, o ambas, o ponerle un color, etc
 
 se puede poner el blur tipo apple liquid glass a los botones o cuando seleccionas las canciones, etc
+
+cuando tenes cola de reproduccion ponele que queres que se reproduzca una especifico tipo tenes cola de 8 y tocas la 4, te borra la 1,2,3 eso esta mal, te tiene que poner a escuchar la que tocaste y despues las otras ponerlas como estan es decir supongamos 123456 toco 3, entonces queda 12456 y eso se transforma en 12345 asi no se pierden canciones y se conserva el orden
