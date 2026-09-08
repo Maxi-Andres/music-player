@@ -145,7 +145,11 @@ fun MusicApp(
             onQueryChange = vm::setQuery,
             onSongSortChange = vm::setSongSort,
             onFolderSortChange = vm::setFolderSort,
-            onSongClick = { indice -> vm.play(visibleSongs, indice) },
+            // El contexto es la biblioteca completa, no lo que quedo filtrado: ver
+            // MusicViewModel.playFromLibrary.
+            onSongClick = { indice ->
+                visibleSongs.getOrNull(indice)?.let(vm::playFromLibrary)
+            },
             onSongMenu = { cancionDelMenu = it },
             onFolderClick = { path -> navegar(Destino.Folder(path)) },
             onFolderMenu = { carpeta ->

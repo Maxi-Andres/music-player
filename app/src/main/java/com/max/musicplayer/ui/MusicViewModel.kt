@@ -124,9 +124,31 @@ class MusicViewModel(app: Application) : AndroidViewModel(app) {
     fun songsUnder(songs: List<Song>, path: String): List<Song> =
         DirectoryTree.songsUnder(songs, path)
 
+    /**
+     * La pestania Canciones entera, ordenada pero **sin** el filtro del buscador.
+     *
+     * Buscar es para encontrar rapido, no para armar una lista: lo que se pone a sonar
+     * al tocar un resultado es la biblioteca completa. Antes el contexto era el
+     * resultado del filtro y buscar un tema puntual dejaba una cola de una sola cancion,
+     * que con repetir se quedaba en bucle.
+     */
+    private fun librarySongs(): List<Song> =
+        MusicLibrary.sortSongs(_allSongs.value, _songSort.value)
+
     // --- reproduccion ---
 
     fun play(songs: List<Song>, index: Int) = player.playContext(songs, index)
+
+    /**
+     * Toca [song] desde la pestania Canciones, con toda la biblioteca de contexto y en
+     * el orden que se este mostrando. Ver [librarySongs].
+     */
+    fun playFromLibrary(song: Song) {
+        val lista = librarySongs()
+        val indice = lista.indexOfFirst { it.id == song.id }
+        if (indice < 0) return
+        player.playContext(lista, indice)
+    }
 
     /** Reproduce la lista mezclada arrancando por una cualquiera, como "Aleatorio". */
     fun shufflePlay(songs: List<Song>) {
