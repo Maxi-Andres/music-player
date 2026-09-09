@@ -126,7 +126,16 @@ fun LibraryScreen(
     updateAvailable: Boolean,
     bottomBar: @Composable () -> Unit,
 ) {
+    // Si la lupa esta abierta *por haberla tocado*. La barra tambien se muestra sola
+    // cuando hay texto de busqueda (ver mostrarBusqueda), asi que este estado solo hace
+    // falta para abrirla vacia.
     var buscando by remember { mutableStateOf(false) }
+
+    // Mientras haya filtro puesto, la barra se ve. Esta pantalla sale de la composicion
+    // al navegar (a la cancion, a una carpeta) y volvia con `buscando` en false: la lista
+    // seguia filtrada pero el texto no se veia y parecia que faltaran canciones. La regla
+    // es "hay busqueda -> se ve la busqueda", y no depende de que el estado sobreviva.
+    val mostrarBusqueda = buscando || query.isNotBlank()
 
     val pagerState = rememberPagerState(
         initialPage = TABS.indexOf(selectedTab).coerceAtLeast(0),
@@ -169,10 +178,13 @@ fun LibraryScreen(
                     .padding(horizontal = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                if (buscando) {
+                if (mostrarBusqueda) {
                     SearchField(
                         query = query,
                         onQueryChange = onQueryChange,
+                        // El teclado se abre solo al tocar la lupa, no al volver de otra
+                        // pantalla: ahi la barra esta para mostrar que filtro hay puesto.
+                        autoFocus = buscando,
                         onClose = {
                             buscando = false
                             onQueryChange("")
@@ -585,12 +597,14 @@ private fun EmptyMessage(text: String) {
  *
  * Se usa [BasicTextField] y no el TextField de Material porque ese ultimo impone
  * 56dp de alto minimo y el texto quedaba cortado en la barra de acciones.
- * Ademas pide el foco al aparecer, para que el teclado se abra solo.
+ * Con [autoFocus] pide el foco al aparecer, para que el teclado se abra solo al tocar
+ * la lupa. Al reaparecer con una busqueda ya hecha se muestra sin robar el foco.
  */
 @Composable
 private fun SearchField(
     query: String,
     onQueryChange: (String) -> Unit,
+    autoFocus: Boolean,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -598,6 +612,7 @@ private fun SearchField(
     val keyboard = LocalSoftwareKeyboardController.current
 
     LaunchedEffect(Unit) {
+        if (!autoFocus) return@LaunchedEffect
         focusRequester.requestFocus()
         keyboard?.show()
     }
