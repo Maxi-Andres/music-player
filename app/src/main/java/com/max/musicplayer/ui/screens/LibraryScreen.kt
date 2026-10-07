@@ -137,6 +137,15 @@ fun LibraryScreen(
     // es "hay busqueda -> se ve la busqueda", y no depende de que el estado sobreviva.
     val mostrarBusqueda = buscando || query.isNotBlank()
 
+    fun cerrarBusqueda() {
+        buscando = false
+        onQueryChange("")
+    }
+
+    // Atras con una busqueda puesta vuelve a la lista completa. Esta es la pantalla raiz:
+    // sin esto no habia nadie escuchando el boton y el sistema cerraba la app.
+    BackHandler(enabled = mostrarBusqueda) { cerrarBusqueda() }
+
     val pagerState = rememberPagerState(
         initialPage = TABS.indexOf(selectedTab).coerceAtLeast(0),
     ) { TABS.size }
@@ -185,10 +194,7 @@ fun LibraryScreen(
                         // El teclado se abre solo al tocar la lupa, no al volver de otra
                         // pantalla: ahi la barra esta para mostrar que filtro hay puesto.
                         autoFocus = buscando,
-                        onClose = {
-                            buscando = false
-                            onQueryChange("")
-                        },
+                        onClose = { cerrarBusqueda() },
                         modifier = Modifier.weight(1f),
                     )
                 } else {

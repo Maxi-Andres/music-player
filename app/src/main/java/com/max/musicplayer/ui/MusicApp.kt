@@ -107,6 +107,8 @@ fun MusicApp(
                 durationMs = playback.durationMs,
                 ringColor = colorDelAnillo,
                 onPlayPause = { vm.player.togglePlayPause() },
+                onPrevious = { vm.player.previous() },
+                onNext = { vm.player.next() },
                 onQueueClick = { navegar(Destino.Queue) },
                 onExpand = { navegar(Destino.NowPlaying) },
             )

@@ -117,9 +117,17 @@ class PlayerConnection(
      * Orden original del contexto, para poder volver atras al desactivar el aleatorio.
      */
     private var contextoOriginal: List<QueueEntry> = emptyList()
-    private var mezclado = false
 
-    private val _state = MutableStateFlow(PlaybackUiState())
+    private val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+
+    /**
+     * El aleatorio es un modo que elige el usuario y queda puesto hasta que lo saque:
+     * se guarda en disco para que sobreviva a cerrar la app, y tocar otra cancion no lo
+     * apaga. Antes vivia solo en memoria y cada contexto nuevo lo reiniciaba.
+     */
+    private var mezclado = prefs.getBoolean(KEY_ALEATORIO, false)
+
+    private val _state = MutableStateFlow(PlaybackUiState(shuffleEnabled = mezclado))
     val state: StateFlow<PlaybackUiState> = _state.asStateFlow()
 
     private val _queue = MutableStateFlow(PlayQueue())
@@ -185,6 +193,10 @@ class PlayerConnection(
 
         // Los uid nuevos tienen que seguir despues de los que ya existen.
         nextUid = (entradas.maxOfOrNull { it.uid } ?: -1L) + 1
+        // Los uid de un contexto se reparten en su orden original (ver playContext), asi
+        // que ordenar por uid lo recupera: sin esto, sacar el aleatorio despues de
+        // reabrir la app dejaba el contexto vacio.
+        contextoOriginal = entradas.filter { !it.ephemeral }.sortedBy { it.uid }
         _queue.value = PlayQueue(entradas, c.currentMediaItemIndex)
     }
 
@@ -226,9 +238,18 @@ class PlayerConnection(
 
     // --- comandos ---
 
+    private fun fijarAleatorio(activo: Boolean) {
+        mezclado = activo
+        prefs.edit().putBoolean(KEY_ALEATORIO, activo).apply()
+        _state.value = _state.value.copy(shuffleEnabled = activo)
+    }
+
     /**
      * Arranca una lista nueva (una carpeta, todas las canciones) desde [startIndex].
-     * Con [shuffle] la lista se mezcla de verdad, dejando primero la elegida.
+     *
+     * [shuffle] prende el aleatorio (el boton "Aleatorio"); en false no lo apaga, respeta
+     * el modo que este puesto. Con el modo activo la lista se mezcla de verdad, dejando
+     * primero la elegida.
      */
     fun playContext(songs: List<Song>, startIndex: Int, shuffle: Boolean = false) {
         if (songs.isEmpty()) return
@@ -240,10 +261,10 @@ class PlayerConnection(
         val base = songs.mapIndexed { i, s -> QueueEntry(nextUid + i, s) }
         nextUid += songs.size
         contextoOriginal = base
-        mezclado = shuffle
+        if (shuffle) fijarAleatorio(true)
 
         val elegida = base.getOrNull(startIndex.coerceIn(0, base.lastIndex)) ?: base.first()
-        val orden = if (shuffle) {
+        val orden = if (mezclado) {
             listOf(elegida) + base.filter { it.uid != elegida.uid }.shuffled()
         } else {
             base
@@ -276,7 +297,7 @@ class PlayerConnection(
         val q = _queue.value
         val actual = q.current ?: return
 
-        mezclado = !mezclado
+        fijarAleatorio(!mezclado)
 
         val contextoVivo = q.contextEntries
         val nuevoOrden = if (mezclado) {
@@ -463,5 +484,8 @@ class PlayerConnection(
          */
         const val POSITION_POLL_MS = 500L
         const val RESTART_THRESHOLD_MS = 3_000L
+
+        private const val PREFS = "reproduccion"
+        private const val KEY_ALEATORIO = "aleatorio"
     }
 }

@@ -32,6 +32,10 @@ jobs:
 
       - name: Preparar Android SDK
         uses: android-actions/setup-android@v3
+        # Por defecto la accion pide tambien el paquete 'tools', que Google ya no
+        # publica, y el paso corta. Se pide solo lo que existe.
+        with:
+          packages: platform-tools
 
       - name: Preparar Gradle (con cache)
         uses: gradle/actions/setup-gradle@v4

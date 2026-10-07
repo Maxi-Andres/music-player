@@ -15,6 +15,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -36,6 +38,9 @@ import com.max.musicplayer.data.Song
 private val MINI_RING_SIZE = 46.dp
 private val MINI_RING_STROKE = 2.5.dp
 
+/** Anterior y siguiente van mas chicos que el estandar de 48dp para no comerse el titulo. */
+private val MINI_SKIP_SIZE = 40.dp
+
 /**
  * Barra fija de abajo con lo que esta sonando
  * (docs/reference/01-tab-canciones.jpeg y 03-detalle-carpeta.jpeg).
@@ -48,6 +53,8 @@ fun MiniPlayer(
     durationMs: Long,
     ringColor: Color,
     onPlayPause: () -> Unit,
+    onPrevious: () -> Unit,
+    onNext: () -> Unit,
     onQueueClick: () -> Unit,
     onExpand: () -> Unit,
     modifier: Modifier = Modifier,
@@ -73,7 +80,7 @@ fun MiniPlayer(
         Column(
             modifier = Modifier
                 .weight(1f)
-                .padding(horizontal = 12.dp),
+                .padding(start = 12.dp, end = 4.dp),
             verticalArrangement = Arrangement.spacedBy(1.dp),
         ) {
             MarqueeText(
@@ -86,6 +93,14 @@ fun MiniPlayer(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
+            )
+        }
+
+        IconButton(onClick = onPrevious, modifier = Modifier.size(MINI_SKIP_SIZE)) {
+            Icon(
+                imageVector = Icons.Default.SkipPrevious,
+                contentDescription = stringResource(R.string.cd_previous),
+                tint = MaterialTheme.colorScheme.onBackground,
             )
         }
 
@@ -106,6 +121,14 @@ fun MiniPlayer(
                     modifier = Modifier.size(26.dp),
                 )
             }
+        }
+
+        IconButton(onClick = onNext, modifier = Modifier.size(MINI_SKIP_SIZE)) {
+            Icon(
+                imageVector = Icons.Default.SkipNext,
+                contentDescription = stringResource(R.string.cd_next),
+                tint = MaterialTheme.colorScheme.onBackground,
+            )
         }
 
         QueueIcon(onClick = onQueueClick)
